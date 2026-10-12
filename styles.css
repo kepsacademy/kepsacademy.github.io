@@ -222,3 +222,11 @@ textarea{min-height:120px;resize:vertical}
   .post-full-body h2{font-size:1.4rem}
   .post-badge{top:12px;left:12px;font-size:.75rem;padding:7px 12px}
 }
+
+/* Admission form */
+select{width:100%;border:1px solid #c9d4e8;border-radius:10px;padding:12px 14px;
+  font-size:1rem;font-family:inherit;background:#fbfcfe;color:var(--ink)}
+select:focus{outline:2px solid var(--gold);border-color:var(--gold)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+@media (max-width:640px){.form-grid{grid-template-columns:1fr}}
+#apply{scroll-margin-top:90px}

@@ -41,4 +41,29 @@
       window.location.href = "mailto:" + ACADEMY_EMAIL + "?subject=" + subject + "&body=" + body;
     });
   }
+  // Admission form -> WhatsApp (no backend; the application goes straight to the academy).
+  var ACADEMY_WHATSAPP = "923016318596";
+  var aform = document.getElementById("admission-form");
+  if (aform) {
+    aform.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var v = function (id) { return document.getElementById(id).value.trim(); };
+      var name = v("af-name"), father = v("af-father"), cls = v("af-class"),
+          group = v("af-group"), phone = v("af-phone"),
+          addr = v("af-address"), prev = v("af-prev");
+      if (!name || !father || !cls || !group || !phone) {
+        alert("Please fill in all the required fields (marked *).");
+        return;
+      }
+      var lines = ["*New Admission Application — KEPS Website*", "———————————",
+        "Student Name: " + name,
+        "Father Name: " + father,
+        "Class: " + cls,
+        "Group: " + group,
+        "Phone: " + phone];
+      if (addr) lines.push("Address: " + addr);
+      if (prev) lines.push("Previous: " + prev);
+      window.open("https://wa.me/" + ACADEMY_WHATSAPP + "?text=" + encodeURIComponent(lines.join("\n")), "_blank");
+    });
+  }
 })();
