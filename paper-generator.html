@@ -123,13 +123,13 @@ textarea{min-height:64px;resize:vertical}
 /* ---------- paper sheet (A4) ---------- */
 #paperView{background:#fff}
 .sheet{width:calc(190mm + 76px);max-width:100%;margin:0 auto;background:#fff;padding:34px 38px;color:#000;box-shadow:0 2px 14px rgba(0,0,0,.18)}
-.sheet .rule-gold{height:3px;background:var(--gold)}
-.sheet .rule-navy{height:2px;background:var(--navy);margin-top:3px}
-.sheet h1.school{text-align:center;font-size:21px;letter-spacing:2px;margin:10px 0 2px;color:#000}
-.sheet .city{text-align:center;font-size:13px;letter-spacing:3px;color:#000}
-.sheet .boardline{text-align:center;font-size:12px;font-weight:700;margin-top:4px}
-.titleband{background:var(--navy);color:#fff;text-align:center;padding:12px 10px;margin:12px 0}
-.titleband .en{font-size:15px;font-weight:700}
+.ph-rule{border-top:2.5px solid #000;border-bottom:1px solid #000;padding-top:2px;margin-bottom:5px}
+.ph-school{text-align:center;font-size:17px;font-weight:800;letter-spacing:3px;color:#000}
+.ph-city{text-align:center;font-size:11px;font-weight:700;letter-spacing:2px;color:#000;margin:3px 0}
+.ph-city .dia{color:var(--gold)}
+.ph-band{background:#ededed;border-top:1.5px solid #000;border-bottom:1.5px solid #000;display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:800;padding:5px 10px;margin:6px 0;color:#000}
+table.ph-info{width:100%;border-collapse:collapse;font-size:12.5px;margin:0 0 6px;color:#000}
+table.ph-info td{border:1px solid #555;padding:4px 8px}
 .inforow{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13.5px;border:1px solid #999;padding:8px 12px;margin-bottom:14px}
 .inforow b{min-width:130px;display:inline-block}
 .secttl{text-align:center;font-size:15px;font-weight:800;margin:16px 0 4px}
@@ -839,15 +839,13 @@ function shortSection(title_en, title_ur, items){
 }
 function renderPaper(){
   var M = pmeta(), L = ["A","B","C","D"], h = "";
-  h += '<div class="rule-gold"></div><div class="rule-navy"></div>';
-  h += '<h1 class="school">KEPS SCIENCE ACADEMY</h1><div class="city">AHMAD PUR SIAL, JHANG</div>';
-  h += '<div class="boardline">BOARD: PUNJAB BOARD</div>';
-  h += '<div class="titleband"><div class="en">' + esc(M.subject.toUpperCase()) + ' (' + M.cls + ') — ' + esc(M.testtype) + ' — ' + esc(M.chapter) + '</div></div>';
-  h += '<table class="info">' +
-    '<tr><td><b>Roll No:</b> ____________</td><td><b>Obt Marks:</b> ______</td></tr>' +
-    '<tr><td><b>Name:</b> ________________________</td><td><b>Total Marks:</b> 30</td></tr>' +
-    '<tr><td><b>Class:</b> Class ' + M.cls + ' (' + esc(M.subject) + ')</td><td><b>Time:</b> ' + esc(M.time) + '</td></tr>' +
-    '<tr><td><b>Chapter:</b> ' + esc(M.chapter) + '</td><td><b>Date:</b> ' + M.date + '</td></tr></table>';
+  h += '<div class="ph-rule"></div>';
+  h += '<div class="ph-school">KEPS SCIENCE ACADEMY</div>';
+  h += '<div class="ph-city"><span class="dia">◆</span> AHMAD PUR SIAL, JHANG <span class="dia">◆</span> &nbsp;|&nbsp; BOARD: PUNJAB BOARD</div>';
+  h += '<div class="ph-band"><span>' + esc(M.subject.toUpperCase()) + '</span><span>' + esc(M.testtype) + '</span><span>Total Marks: 30</span></div>';
+  h += '<table class="ph-info"><tr>' +
+    '<td><b>Name:</b> ________________</td><td><b>Class:</b> ' + M.cls + '</td><td><b>Roll No:</b> __________</td><td><b>Date:</b> ' + M.date + '</td></tr><tr>' +
+    '<td><b>Chapter:</b> ' + esc(M.chapter) + '</td><td><b>Time:</b> ' + esc(M.time) + '</td><td><b>Total Marks:</b> 30</td><td><b>Obt Marks:</b> ______</td></tr></table>';
   /* Q1 MCQs */
   h += '<div class="qhead"><span>Q.No.1: Choose the Correct Option.</span><span class="ur" dir="rtl">سوال نمبر 1: درست جواب کا انتخاب کریں۔</span></div>';
   (DRAFT.mcqs || []).forEach(function(m, i){
@@ -867,8 +865,8 @@ function renderPaper(){
   var showKey = (SIDES === "2") ? true : KEY_ON;
   if (showKey){
     h += '<div class="pagebreak"></div>';
-    h += '<div class="rule-gold"></div><div class="rule-navy"></div>';
-    h += '<h1 class="school">ANSWER KEY</h1><div class="city">' + esc(M.subject.toUpperCase()) + ' — ' + esc(M.chapter) + '</div>';
+    h += '<div class="ph-rule"></div>';
+    h += '<div class="ph-school">ANSWER KEY</div><div class="ph-city">' + esc(M.subject.toUpperCase()) + ' — ' + esc(M.chapter) + '</div>';
     h += '<div class="secttl">Q.No.1 — MCQs</div><table class="q"><tr><th>Q</th><th>Answer</th><th>Q</th><th>Answer</th></tr>';
     var mc = DRAFT.mcqs || [];
     for (var i = 0; i < mc.length; i += 2){
