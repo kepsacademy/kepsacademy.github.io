@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KEPS Paper Generator — Admin</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#1a56ac;--blue-dark:#0e3a7d;--navy:#0b1e3f;--grey-bg:#f2f5fa;--panel:#eef3fb;--line:#d7e0ef;--ink:#1f2937;--muted:#5b6b82;--gold:#c9a227}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",Arial,sans-serif;background:var(--grey-bg);color:var(--ink)}
+.ur{font-family:"Noto Nastaliq Urdu","Jameel Noori Nastaleeq",serif}
+.hidden{display:none!important}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:12px 20px;display:flex;align-items:center;justify-content:center;position:relative}
+.brand{font-size:22px;font-weight:800;color:var(--navy);letter-spacing:1px}
+.brand span{color:var(--blue)}
+.topbar .admin-tag{position:absolute;right:20px;font-size:12px;color:var(--muted)}
+.topbar .admin-tag button{margin-left:8px}
+.hero{max-width:1060px;margin:34px auto;padding:0 18px;display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:28px;box-shadow:0 6px 24px rgba(26,86,172,.08)}
+.card h2{color:var(--blue);font-size:22px;margin-bottom:6px}
+.card p.sub{color:var(--muted);font-size:14px;margin-bottom:18px}
+label.f{display:block;font-size:14px;font-weight:600;margin:12px 0 5px;color:var(--navy)}
+input[type=text],input[type=password],input[type=number],select,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:#f7f9fd;font-size:15px;font-family:inherit}
+textarea{resize:vertical;min-height:70px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--blue);border-color:var(--blue);background:#fff}
+.btn{display:inline-block;background:var(--blue);color:#fff;border:none;border-radius:9px;padding:12px 26px;font-size:15px;font-weight:700;cursor:pointer;margin-top:14px}
+.btn:hover{background:var(--blue-dark)}
+.btn:disabled{opacity:.6;cursor:wait}
+.btn.ghost{background:#fff;color:var(--blue);border:1px solid var(--blue)}
+.btn.grey{background:#475569}
+.err{background:#fdecec;border:1px solid #f5b5b5;color:#b91c1c;border-radius:9px;padding:10px 12px;font-size:14px;margin-top:12px}
+.okmsg{background:#ecfdf5;border:1px solid #a7e8c9;color:#047857;border-radius:9px;padding:10px 12px;font-size:14px;margin-top:12px}
+.side-panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px}
+.side-panel h3{color:var(--blue);margin-bottom:14px;font-size:19px}
+.step-li{display:flex;gap:12px;margin:13px 0;align-items:flex-start}
+.step-n{background:var(--blue);color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
+.step-li div b{color:var(--navy)}
+.step-li div p{font-size:13.5px;color:var(--muted)}
+.wa-banner{background:#e8f4ff;border:1px solid #bcd9f7;border-radius:9px;padding:10px 12px;font-size:13.5px;color:var(--blue-dark);margin-top:16px}
+.wrap{max-width:1060px;margin:26px auto;padding:0 18px}
+.stepper{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.stepper .st{flex:1;min-width:120px;text-align:center;background:#fff;border:1px solid var(--line);border-radius:9px;padding:9px 6px;font-size:13px;font-weight:700;color:var(--muted)}
+.stepper .st.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.stepper .st.done{background:#dbeafe;color:var(--blue-dark)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.checks label{display:inline-block;background:#f7f9fd;border:1px solid var(--line);border-radius:8px;padding:7px 12px;margin:5px 6px 0 0;font-size:14px;font-weight:500;cursor:pointer}
+.checks input{margin-right:6px}
+.rowbtns{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.thumbs img{width:86px;height:86px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.hint{font-size:12.5px;color:var(--muted)}
+.timer{font-size:14px;color:var(--blue-dark);font-weight:700;margin-top:10px}
+.qcard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0}
+.qcard h4{color:var(--blue);margin-bottom:8px;font-size:15px}
+.qcard textarea{min-height:44px;font-size:14px}
+.optgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+#paperView{background:#fff}
+.sheet{max-width:800px;margin:0 auto;background:#fff;padding:34px 38px;color:#000}
+.sheet .rule-gold{height:3px;background:var(--gold)}
+.sheet .rule-navy{height:2px;background:var(--navy);margin-top:3px}
+.sheet h1.school{text-align:center;font-size:21px;letter-spacing:2px;margin:10px 0 2px;color:#000}
+.sheet .city{text-align:center;font-size:13px;letter-spacing:3px;color:#000}
+.sheet .boardline{text-align:center;font-size:12px;font-weight:700;margin-top:4px}
+.titleband{background:var(--navy);color:#fff;text-align:center;padding:12px 10px;margin:12px 0}
+.titleband .en{font-size:15px;font-weight:700}
+.titleband .uru{font-size:16px;margin-top:6px}
+.inforow{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13.5px;border:1px solid #999;padding:8px 12px;margin-bottom:14px}
+.inforow b{min-width:130px;display:inline-block}
+.secttl{text-align:center;font-size:15px;font-weight:800;margin:16px 0 4px}
+.secttl .uru{font-size:15px}
+table.q{width:100%;border-collapse:collapse;margin:8px 0;font-size:13.5px}
+table.q td,table.q th{border:1px solid #555;padding:6px 8px;vertical-align:top}
+table.q th{background:#f0f0f0}
+td.no{width:34px;text-align:center;font-weight:700}
+td.enq{text-align:left}
+td.urq{text-align:right}
+.opts td{font-size:13px}
+.pfoot{text-align:center;font-size:11px;margin-top:18px;color:#333;border-top:2px solid var(--navy);padding-top:6px}
+.pagebreak{page-break-before:always}
+.toolbar{max-width:800px;margin:0 auto;padding:14px 18px;display:flex;gap:10px;flex-wrap:wrap;background:var(--grey-bg)}
+footer.site{background:var(--navy);color:#cdd8ea;text-align:center;padding:22px;font-size:13px;margin-top:40px;border-radius:24px 24px 0 0}
+@media print{
+  body{background:#fff}
+  .topbar,.toolbar,footer.site,#loginView,#setupView,#genView,#reviewView{display:none!important}
+  #paperView{display:block!important}
+  .sheet{max-width:100%;padding:0}
+  .pagebreak{page-break-before:always}
+}
+@media(max-width:760px){.hero{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.optgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">KEPS <span>PAPER GENERATOR</span></div>
+  <div class="admin-tag hidden" id="adminTag">Admin <button class="btn ghost" style="padding:6px 12px;margin-top:0" id="btnLogout">Logout</button></div>
+</div>
+
+<!-- ============ SETUP (Apps Script URL) ============ -->
+<div class="wrap hidden" id="setupView">
+  <div class="card" style="max-width:640px;margin:30px auto">
+    <h2>⚙ Setup — ek dafa</h2>
+    <p class="sub">Apne Apps Script Web App ka URL (jo <b>/exec</b> par khatam hota hai) yahan paste karein. Ye sirf is browser mein save hoga.</p>
+    <label class="f">Apps Script Web App URL</label>
+    <input type="text" id="setupUrl" placeholder="https://script.google.com/macros/s/AKfyc.../exec">
+    <button class="btn" id="btnSaveUrl">Save</button>
+    <div class="err hidden" id="setupErr"></div>
+    <p class="hint" style="margin-top:12px">Setup guide SETUP-URDU.txt mein hai — pehle Apps Script deploy karna zaroori hai.</p>
+  </div>
+</div>
+
+<!-- ============ LOGIN ============ -->
+<div class="hero hidden" id="loginView">
+  <div class="card">
+    <h2>🔐 Admin Sign In</h2>
+    <p class="sub">Paper generator sirf admin ke liye hai. Apna username aur password likhein.</p>
+    <label class="f">Username</label>
+    <input type="text" id="loginUser" autocomplete="username" placeholder="Admin username">
+    <label class="f">Password</label>
+    <input type="password" id="loginPass" autocomplete="current-password" placeholder="Admin password">
+    <button class="btn" id="btnLogin">Sign In to Continue</button>
+    <div class="err hidden" id="loginErr"></div>
+  </div>
+  <div class="side-panel">
+    <h3>Paper Generator se kya hota hai?</h3>
+    <div class="step-li"><div class="step-n">1</div><div><b>Board &amp; Class chunein</b><p>Punjab, Federal, KPK, Sindh, Balochistan, AJK</p></div></div>
+    <div class="step-li"><div class="step-n">2</div><div><b>Subject &amp; Chapter likhein</b><p>Chapter ki photos lagana behtar hai</p></div></div>
+    <div class="step-li"><div class="step-n">3</div><div><b>AI se questions banwayein</b><p>Exercise, past-paper, conceptual — apni marzi</p></div></div>
+    <div class="step-li"><div class="step-n">4</div><div><b>Review karke Print karein</b><p>Answer key ke sath, seedha PDF</p></div></div>
+    <div class="wa-banner">🔒 Sirf admin login ke baad kaam karega — koi aur access nahi kar sakta.</div>
+  </div>
+</div>
+
+<!-- ============ GENERATOR ============ -->
+<div class="wrap hidden" id="genView">
+  <div class="stepper" id="stepper">
+    <div class="st on" data-s="1">1. Board &amp; Class</div>
+    <div class="st" data-s="2">2. Subject &amp; Chapter</div>
+    <div class="st" data-s="3">3. Photos &amp; AI Draft</div>
+    <div class="st" data-s="4">4. Review / Edit</div>
+    <div class="st" data-s="5">5. Paper</div>
+  </div>
+
+  <div class="card" id="gs1">
+    <h2>1. Board &amp; Class</h2>
+    <div class="grid2">
+      <div><label class="f">Board</label><select id="g_board">
+        <option value="Punjab">Punjab Board (PCTB/PTB)</option>
+        <option value="Federal">Federal Board (FBISE)</option>
+        <option value="KPK">KPK Board</option>
+        <option value="Sindh">Sindh Board</option>
+        <option value="Balochistan">Balochistan Board</option>
+        <option value="AJK">AJK Board</option>
+      </select></div>
+      <div><label class="f">Class</label><input type="text" id="g_class" placeholder="9th"></div>
+      <div><label class="f">Time allowed</label><input type="text" id="g_time" value="1 Hour"></div>
+      <div><label class="f">Test type</label><input type="text" id="g_testtype" value="Weekly Test"></div>
+    </div>
+    <div class="rowbtns"><button class="btn" data-next="2">Aage →</button></div>
+  </div>
+
+  <div class="card hidden" id="gs2">
+    <h2>2. Subject &amp; Chapter</h2>
+    <div class="grid2">
+      <div><label class="f">Subject (English)</label><input type="text" id="g_subject" placeholder="Chemistry"></div>
+      <div><label class="f">Chapter (English)</label><input type="text" id="g_chapter" placeholder="CHAPTER 6: EQUILIBRIA"></div>
+    </div>
+    <label class="f">Topics <span class="hint">(optional)</span></label>
+    <input type="text" id="g_topics" placeholder="topics 6.1–6.2">
+    <label class="f">Question nature <span class="hint">(AI inhi qisam ke sawal banayega)</span></label>
+    <div class="checks" id="g_qnature">
+      <label><input type="checkbox" value="Exercise questions" checked>Exercise</label>
+      <label><input type="checkbox" value="Past-paper questions">Past-paper</label>
+      <label><input type="checkbox" value="Conceptual questions">Conceptual</label>
+      <label><input type="checkbox" value="Review questions">Review</label>
+      <label><input type="checkbox" value="Example questions">Example</label>
+    </div>
+    <div class="grid2">
+      <div><label class="f">Difficulty</label><select id="g_diff">
+        <option value="mixed">Mixed (asaan + normal + mushkil)</option>
+        <option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option>
+      </select></div>
+      <div><label class="f">AI ke liye notes <span class="hint">(optional)</span></label><input type="text" id="g_notes" placeholder="sirf exercise walay sawal"></div>
+    </div>
+    <div class="rowbtns"><button class="btn ghost" data-next="1">← Peeche</button><button class="btn" data-next="3">Aage →</button></div>
+  </div>
+
+  <div class="card hidden" id="gs3">
+    <h2>3. Photos &amp; AI Draft</h2>
+    <p class="sub">Chapter ki photos lagayein (zyada se zyada 8) — AI inhi se questions banayega.</p>
+    <input type="file" id="g_photos" accept="image/*" multiple>
+    <div class="thumbs" id="thumbs"></div>
+    <div class="rowbtns">
+      <button class="btn ghost" data-next="2">← Peeche</button>
+      <button class="btn" id="btnDraft">⚡ AI se draft banao</button>
+    </div>
+    <div class="timer hidden" id="draftTimer"></div>
+    <div class="err hidden" id="draftErr"></div>
+  </div>
+</div>
+
+<!-- ============ REVIEW ============ -->
+<div class="wrap hidden" id="reviewView">
+  <div class="card">
+    <h2>4. Review / Edit</h2>
+    <p class="sub">Har sawal check karein — zaroorat ho to edit karein, phir paper banayein.</p>
+    <div id="reviewList"></div>
+    <div class="rowbtns">
+      <button class="btn ghost" id="btnBackGen">← Peeche</button>
+      <button class="btn" id="btnMakePaper">📄 Paper banao</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAPER ============ -->
+<div id="paperView" class="hidden">
+  <div class="toolbar">
+    <button class="btn" onclick="window.print()">🖨 Print / PDF</button>
+    <button class="btn ghost" id="btnKeyToggle">Answer Key: OFF</button>
+    <button class="btn grey" id="btnBackReview">← Review</button>
+  </div>
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<footer class="site">KEPS Science Academy · Ahmad Pur Sial, Jhang · Admin Paper Generator</footer>
+
+<script>
+/* ================= KEPS Paper Generator ================= */
+var $ = function(id){ return document.getElementById(id); };
+var API = localStorage.getItem("keps_pgen_url") || "";
+var CREDS = { user: sessionStorage.getItem("keps_pgen_u") || "", pass: sessionStorage.getItem("keps_pgen_p") || "" };
+var DRAFT = null, PHOTOS = [];
+
+function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+/* isolate math in Urdu/RTL text so it never mirrors */
+function bi(s){ return esc(s).replace(/\{[^{}]*\}/g, function(m){ return "<bdi>"+m+"</bdi>"; }); }
+
+function apiCall(payload, timeoutMs){
+  return new Promise(function(resolve, reject){
+    var xhr = new XMLHttpRequest();
+    var done = false;
+    var timer = setTimeout(function(){ if(!done){ done = true; try{ xhr.abort(); }catch(e){} reject(new Error("timeout")); } }, timeoutMs || 90000);
+    xhr.onreadystatechange = function(){
+      if (xhr.readyState === 4 && !done){
+        done = true; clearTimeout(timer);
+        try { resolve(JSON.parse(xhr.responseText)); }
+        catch(e){ reject(new Error("Server ka jawab samajh nahi aaya.")); }
+      }
+    };
+    xhr.onerror = function(){ if(!done){ done = true; clearTimeout(timer); reject(new Error("Server se rabta nahi ho saka.")); } };
+    xhr.open("POST", API, true);
+    xhr.setRequestHeader("Content-Type", "text/plain;charset=utf-8"); /* no CORS preflight */
+    xhr.send(JSON.stringify(payload));
+  });
+}
+function authed(payload){
+  payload.user = CREDS.user; payload.pass = CREDS.pass;
+  return apiCall(payload, 120000);
+}
+
+/* ---------- views ---------- */
+function show(id){
+  ["setupView","loginView","genView","reviewView","paperView"].forEach(function(v){ $(v).classList.add("hidden"); });
+  $(id).classList.remove("hidden");
+  window.scrollTo(0,0);
+}
+function boot(){
+  if (!API){ show("setupView"); return; }
+  if (CREDS.user && CREDS.pass){ enterApp(); } else { show("loginView"); }
+}
+$("btnSaveUrl").addEventListener("click", function(){
+  var u = $("setupUrl").value.trim();
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/.test(u)){
+    $("setupErr").textContent = "⚠️ URL theek nahi lag raha — /exec par khatam hona chahiye.";
+    $("setupErr").classList.remove("hidden"); return;
+  }
+  $("setupErr").classList.add("hidden");
+  localStorage.setItem("keps_pgen_url", u); API = u;
+  show("loginView");
+});
+
+/* ---------- login ---------- */
+$("btnLogin").addEventListener("click", function(){
+  var u = $("loginUser").value.trim(), p = $("loginPass").value;
+  var err = $("loginErr"); err.classList.add("hidden");
+  if (!u || !p){ err.textContent = "⚠️ Username aur password dono likhein."; err.classList.remove("hidden"); return; }
+  var btn = $("btnLogin"); btn.disabled = true; btn.textContent = "⏳ Check ho raha hai…";
+  CREDS = { user: u, pass: p };
+  authed({ action: "ping" }).then(function(j){
+    btn.disabled = false; btn.textContent = "Sign In to Continue";
+    if (j.ok){
+      sessionStorage.setItem("keps_pgen_u", u);
+      sessionStorage.setItem("keps_pgen_p", p);
+      enterApp();
+    } else {
+      err.textContent = "⚠️ " + (j.error || "Login nahi ho saka.");
+      err.classList.remove("hidden");
+    }
+  }).catch(function(e){
+    btn.disabled = false; btn.textContent = "Sign In to Continue";
+    err.textContent = "⚠️ " + e.message; err.classList.remove("hidden");
+  });
+});
+$("btnLogout").addEventListener("click", function(){
+  sessionStorage.removeItem("keps_pgen_u"); sessionStorage.removeItem("keps_pgen_p");
+  CREDS = { user: "", pass: "" };
+  $("adminTag").classList.add("hidden");
+  show("loginView");
+});
+function enterApp(){
+  $("adminTag").classList.remove("hidden");
+  goStep(1); show("genView");
+}
+
+/* ---------- stepper ---------- */
+function goStep(n){
+  [1,2,3].forEach(function(i){
+    $("gs"+i).classList.add("hidden");
+    var st = document.querySelector('#stepper .st[data-s="'+i+'"]');
+    st.classList.remove("on","done");
+    if (i < n) st.classList.add("done"); else if (i === n) st.classList.add("on");
+  });
+  $("gs"+n).classList.remove("hidden");
+  document.querySelector('#stepper .st[data-s="4"]').className = "st" + (n > 4 ? " done" : "");
+  document.querySelector('#stepper .st[data-s="5"]').className = "st" + (n > 5 ? " done" : "");
+  window.scrollTo(0,0);
+}
+document.querySelectorAll("[data-next]").forEach(function(b){
+  b.addEventListener("click", function(){ goStep(parseInt(b.getAttribute("data-next"), 10)); });
+});
+
+/* ---------- photos ---------- */
+$("g_photos").addEventListener("change", function(){
+  PHOTOS = [];
+  var box = $("thumbs"); box.innerHTML = "";
+  var files = Array.prototype.slice.call($("g_photos").files, 0, 8);
+  if (!files.length) return;
+  var pending = files.length;
+  files.forEach(function(f){
+    var img = new Image();
+    img.onload = function(){
+      var maxDim = 1600, w = img.width, h = img.height;
+      if (Math.max(w,h) > maxDim){ var r = maxDim / Math.max(w,h); w = Math.round(w*r); h = Math.round(h*r); }
+      var c = document.createElement("canvas"); c.width = w; c.height = h;
+      c.getContext("2d").drawImage(img, 0, 0, w, h);
+      var b64 = c.toDataURL("image/jpeg", 0.82).split(",")[1];
+      PHOTOS.push(b64);
+      var th = document.createElement("img"); th.src = c.toDataURL("image/jpeg", 0.7);
+      box.appendChild(th);
+      URL.revokeObjectURL(img.src);
+      if (--pending === 0) box.insertAdjacentHTML("beforeend", "<p class='hint' style='width:100%'>✓ "+PHOTOS.length+" photos tayyar</p>");
+    };
+    img.src = URL.createObjectURL(f);
+  });
+});
+
+/* ---------- AI draft ---------- */
+$("btnDraft").addEventListener("click", function(){
+  var err = $("draftErr"); err.classList.add("hidden");
+  if (!PHOTOS.length){ err.textContent = "⚠️ Pehle chapter ki photos lagayein."; err.classList.remove("hidden"); return; }
+  var btn = $("btnDraft"); btn.disabled = true;
+  var t0 = Date.now(), timer = $("draftTimer");
+  timer.classList.remove("hidden");
+  var iv = setInterval(function(){ timer.textContent = "⏳ AI kaam kar raha hai… " + Math.floor((Date.now()-t0)/1000) + "s"; }, 500);
+  var qn = Array.prototype.slice.call(document.querySelectorAll("#g_qnature input:checked")).map(function(c){ return c.value; });
+  var brief = {
+    class_name: $("g_class").value.trim(), subject: $("g_subject").value.trim(),
+    chapter: $("g_chapter").value.trim(), topics: $("g_topics").value.trim(),
+    board: $("g_board").value, difficulty: $("g_diff").value,
+    qnature: qn, notes: $("g_notes").value.trim()
+  };
+  authed({ action: "draft", brief: brief, images: PHOTOS }).then(function(j){
+    clearInterval(iv); timer.classList.add("hidden");
+    btn.disabled = false;
+    if (!j.ok){ err.textContent = "⚠️ " + j.error; err.classList.remove("hidden"); return; }
+    DRAFT = j.draft;
+    renderReview();
+    show("reviewView");
+    var st4 = document.querySelector('#stepper .st[data-s="4"]'); if (st4) st4.className = "st on";
+  }).catch(function(e){
+    clearInterval(iv); timer.classList.add("hidden");
+    btn.disabled = false;
+    err.textContent = "⚠️ " + e.message + " — dobara try karein.";
+    err.classList.remove("hidden");
+  });
+});
+
+/* ---------- review / edit ---------- */
+function renderReview(){
+  var box = $("reviewList"); box.innerHTML = "";
+  (DRAFT.mcqs || []).forEach(function(m, i){
+    var d = document.createElement("div"); d.className = "qcard";
+    d.innerHTML = '<h4>MCQ '+(i+1)+'</h4>' +
+      '<label class="f">Stem (English)</label><textarea data-m="'+i+'" data-k="stem_en">'+esc(m.stem_en)+'</textarea>' +
+      '<label class="f">Stem (Urdu)</label><textarea class="ur" data-m="'+i+'" data-k="stem_ur" dir="rtl">'+esc(m.stem_ur)+'</textarea>' +
+      '<div class="optgrid">' +
+      [0,1,2,3].map(function(j){
+        return '<div><label class="f">Option '+String.fromCharCode(65+j)+' (EN)</label><input type="text" data-m="'+i+'" data-k="oe'+j+'" value="'+esc(m.options_en[j])+'">' +
+        '<label class="f">Option '+String.fromCharCode(65+j)+' (UR)</label><input type="text" class="ur" dir="rtl" data-m="'+i+'" data-k="ou'+j+'" value="'+esc(m.options_ur[j])+'"></div>';
+      }).join("") + '</div>' +
+      '<label class="f">Correct answer</label><select data-m="'+i+'" data-k="answer">' +
+      ["a","b","c","d"].map(function(a){ return '<option value="'+a+'"'+(m.answer===a?" selected":"")+'>'+a.toUpperCase()+'</option>'; }).join("") + '</select>';
+    box.appendChild(d);
+  });
+  [["shorts2","Short questions (2 marks)","2"],["shorts3","Short questions (3 marks)","3"]].forEach(function(cfg){
+    (DRAFT[cfg[0]] || []).forEach(function(s, i){
+      var d = document.createElement("div"); d.className = "qcard";
+      d.innerHTML = '<h4>'+cfg[1]+' '+(i+1)+'</h4>' +
+        '<label class="f">English</label><textarea data-s="'+cfg[0]+":"+i+'" data-k="text_en">'+esc(s.text_en)+'</textarea>' +
+        '<label class="f">Urdu</label><textarea class="ur" dir="rtl" data-s="'+cfg[0]+":"+i+'" data-k="text_ur">'+esc(s.text_ur)+'</textarea>';
+      box.appendChild(d);
+    });
+  });
+  box.querySelectorAll("[data-m]").forEach(function(el){
+    el.addEventListener("input", function(){
+      var i = +el.getAttribute("data-m"), k = el.getAttribute("data-k"), m = DRAFT.mcqs[i];
+      if (k === "answer") m.answer = el.value;
+      else if (k.indexOf("oe") === 0) m.options_en[+k.slice(2)] = el.value;
+      else if (k.indexOf("ou") === 0) m.options_ur[+k.slice(2)] = el.value;
+      else m[k] = el.value;
+    });
+    el.addEventListener("change", function(){ el.dispatchEvent(new Event("input")); });
+  });
+  box.querySelectorAll("[data-s]").forEach(function(el){
+    el.addEventListener("input", function(){
+      var p = el.getAttribute("data-s").split(":"), s = DRAFT[p[0]][+p[1]];
+      s[el.getAttribute("data-k")] = el.value;
+    });
+  });
+}
+$("btnBackGen").addEventListener("click", function(){ goStep(3); show("genView"); });
+
+/* ---------- paper render ---------- */
+var KEY_ON = false;
+$("btnKeyToggle").addEventListener("click", function(){
+  KEY_ON = !KEY_ON;
+  $("btnKeyToggle").textContent = "Answer Key: " + (KEY_ON ? "ON" : "OFF");
+  renderPaper();
+});
+$("btnBackReview").addEventListener("click", function(){ show("reviewView"); });
+$("btnMakePaper").addEventListener("click", function(){
+  if (!DRAFT){ alert("Pehle AI draft banayein."); return; }
+  renderPaper(); show("paperView");
+  var st5 = document.querySelector('#stepper .st[data-s="5"]');
+});
+function meta(){ return {
+  cls: $("g_class").value.trim() || "—", subject: $("g_subject").value.trim() || "—",
+  chapter: $("g_chapter").value.trim() || "—", board: $("g_board").value,
+  time: $("g_time").value.trim(), testtype: $("g_testtype").value.trim()
+}; }
+function renderPaper(){
+  var M = meta(), L = ["A","B","C","D"], h = "";
+  h += '<div class="rule-gold"></div><div class="rule-navy"></div>';
+  h += '<h1 class="school">KEPS SCIENCE ACADEMY</h1><div class="city">AHMAD PUR SIAL, JHANG</div>';
+  h += '<div class="boardline">BOARD: ' + esc(M.board.toUpperCase()) + ' BOARD</div>';
+  h += '<div class="titleband"><div class="en">' + esc(M.subject.toUpperCase()) + ' (' + esc(M.cls) + ') — ' + esc(M.testtype) + ' — ' + esc(M.chapter) + '</div></div>';
+  h += '<div class="inforow"><span><b>Name:</b> ____________</span><span><b>Roll No:</b> ____________</span><span><b>Class:</b> ' + esc(M.cls) + '</span><span><b>Subject:</b> ' + esc(M.subject) + '</span><span><b>Total Marks:</b> 30</span><span><b>Time:</b> ' + esc(M.time) + '</span></div>';
+  /* Q1 MCQs */
+  h += '<div class="secttl">Q.1: Choose the correct option. (5×1=5)<div class="uru ur" dir="rtl">سوال نمبر 1: درست جواب کا انتخاب کریں۔</div></div>';
+  h += '<table class="q"><tr><th style="width:34px">No</th><th>English</th><th class="ur" dir="rtl">اردو</th></tr>';
+  (DRAFT.mcqs || []).forEach(function(m, i){
+    h += '<tr><td class="no">' + (i+1) + '</td><td class="enq">' + bi(m.stem_en) + '</td><td class="urq ur" dir="rtl">' + bi(m.stem_ur) + '</td></tr>';
+    h += '<tr><td></td><td class="enq opts">' + [0,1,2,3].map(function(j){ return "("+L[j]+") " + bi(m.options_en[j]); }).join(" &nbsp; ") + '</td><td class="urq ur opts" dir="rtl">' + [0,1,2,3].map(function(j){ return "("+L[j]+") " + bi(m.options_ur[j]); }).join(" &nbsp; ") + '</td></tr>';
+  });
+  h += '</table>';
+  /* Q2 / Q3 */
+  [["shorts2","Q.2: Attempt any FIVE short questions. (5×2=10)","سوال نمبر 2: کوئی سے پانچ مختصر سوالات حل کریں۔"],
+   ["shorts3","Q.3: Attempt any FIVE short questions. (5×3=15)","سوال نمبر 3: کوئی سے پانچ مختصر سوالات حل کریں۔"]].forEach(function(cfg){
+    h += '<div class="secttl">' + cfg[1] + '<div class="uru ur" dir="rtl">' + cfg[2] + '</div></div>';
+    h += '<table class="q"><tr><th style="width:34px">No</th><th>English</th><th class="ur" dir="rtl">اردو</th></tr>';
+    (DRAFT[cfg[0]] || []).forEach(function(s, i){
+      h += '<tr><td class="no">' + (i+1) + '</td><td class="enq">' + bi(s.text_en) + '</td><td class="urq ur" dir="rtl">' + bi(s.text_ur) + '</td></tr>';
+    });
+    h += '</table>';
+  });
+  h += '<div class="pfoot">KEPS SCIENCE ACADEMY • AHMAD PUR SIAL, JHANG</div>';
+  if (KEY_ON){
+    h += '<div class="pagebreak"></div>';
+    h += '<div class="rule-gold"></div><div class="rule-navy"></div>';
+    h += '<h1 class="school">ANSWER KEY</h1><div class="city">' + esc(M.subject.toUpperCase()) + ' — ' + esc(M.chapter) + '</div>';
+    h += '<div class="secttl">Q.1 — MCQs</div><table class="q"><tr><th>Q</th><th>Answer</th><th>Q</th><th>Answer</th></tr>';
+    var mc = DRAFT.mcqs || [];
+    for (var i = 0; i < mc.length; i += 2){
+      h += '<tr><td class="no">' + (i+1) + '</td><td class="enq"><b>' + esc((mc[i].answer||"").toUpperCase()) + '</b></td>';
+      if (mc[i+1]) h += '<td class="no">' + (i+2) + '</td><td class="enq"><b>' + esc((mc[i+1].answer||"").toUpperCase()) + '</b></td>';
+      else h += '<td></td><td></td>';
+      h += '</tr>';
+    }
+    h += '</table><div class="pfoot">KEPS SCIENCE ACADEMY • Teacher\'s copy</div>';
+  }
+  $("sheet").innerHTML = h;
+}
+
+boot();
+</script></body></html>
