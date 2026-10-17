@@ -7,15 +7,27 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
+@font-face{
+  font-family:'Jameel Noori Nastaleeq';
+  src:url('fonts/jameel-noori-nastaleeq.woff2') format('woff2');
+  font-weight:400 700;
+  font-display:swap;
+}
+@font-face{
+  font-family:'STIX Math';
+  src:url('fonts/stixgeneral.woff2') format('woff2');
+  font-display:swap;
+}
 :root{
   --primary:#2f5bff; --primary-d:#1e40c8; --purple:#5b5bd6; --teal:#12a5a5;
   --ink:#1a2333; --muted:#6b7686; --bg:#f2f4fa; --card:#fff; --line:#e6eaf2;
-  --navy:#0B1E3F; --gold:#C9A227; --urfont:'Noto Nastaliq Urdu',serif;
+  --navy:#0B1E3F; --gold:#C9A227; --urfont:'Jameel Noori Nastaleeq','Noto Nastaliq Urdu',serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
 .hidden{display:none!important}
-.ur{font-family:var(--urfont)}
+.ur{font-family:var(--urfont);line-height:2}
+.sheet .ur{line-height:2.2}
 /* ---------- topbar ---------- */
 .topbar{position:fixed;top:0;left:0;right:0;height:60px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 18px;z-index:50}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;color:var(--navy);white-space:nowrap}
@@ -127,7 +139,7 @@ td.enq{text-align:left}
 td.urq{text-align:right}
 .opts td{font-size:13px}
 .pfoot{text-align:center;font-size:11px;margin-top:18px;color:#333;border-top:2px solid var(--navy);padding-top:6px}
-.math{font-family:Georgia,"Times New Roman",serif}
+.math{font-family:'STIX Math',Georgia,"Times New Roman",serif}
 /* ----- PaperPoint-style paper body (KEPS header, no logos) ----- */
 table.info{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px;color:#000}
 table.info td{border:1px solid #666;padding:6px 10px;width:50%}
@@ -838,6 +850,35 @@ function renderPaper(){
     h += '</table><div class="pfoot">KEPS SCIENCE ACADEMY • Teacher\'s copy</div>';
   }
   $("sheet").innerHTML = h;
+  fitToOnePage();
+}
+/* paper hamesha SIRF front side — ek A4 page par fit karo */
+function firstPageH(){
+  var sheet = $("sheet");
+  var r = sheet.getBoundingClientRect();
+  var pb = sheet.querySelector(".pagebreak");
+  if (pb){
+    var pr = pb.getBoundingClientRect();
+    return pr.top - r.top;
+  }
+  return sheet.scrollHeight;
+}
+function fitToOnePage(){
+  var sheet = $("sheet");
+  sheet.style.zoom = 1;
+  var maxH = 1030; /* A4 printable height @96dpi */
+  var z = 1, h = firstPageH(), guard = 0;
+  while (h > maxH && z > 0.55 && guard < 20){
+    z = Math.round((z - 0.05) * 100) / 100;
+    sheet.style.zoom = z;
+    h = firstPageH();
+    guard++;
+  }
+}
+if (document.fonts && document.fonts.ready){
+  document.fonts.ready.then(function(){
+    if (!$("paperView").classList.contains("hidden") && DRAFT) fitToOnePage();
+  });
 }
 function showPaperView(){
   $("appShell").classList.add("hidden");
