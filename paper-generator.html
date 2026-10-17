@@ -122,7 +122,7 @@ textarea{min-height:64px;resize:vertical}
 .timer{margin-top:10px;color:var(--primary-d);font-weight:700}
 /* ---------- paper sheet (A4) ---------- */
 #paperView{background:#fff}
-.sheet{max-width:800px;margin:0 auto;background:#fff;padding:34px 38px;color:#000}
+.sheet{width:calc(190mm + 76px);max-width:100%;margin:0 auto;background:#fff;padding:34px 38px;color:#000;box-shadow:0 2px 14px rgba(0,0,0,.18)}
 .sheet .rule-gold{height:3px;background:var(--gold)}
 .sheet .rule-navy{height:2px;background:var(--navy);margin-top:3px}
 .sheet h1.school{text-align:center;font-size:21px;letter-spacing:2px;margin:10px 0 2px;color:#000}
@@ -160,7 +160,7 @@ table.info td{border:1px solid #666;padding:6px 10px;width:50%}
   body{background:#fff}
   .topbar,.sidebar,.toolbar,#setupView,#loginView,#appShell{display:none!important}
   #paperView{display:block!important}
-  .sheet{max-width:none;width:100%;padding:0;margin:0}
+  .sheet{max-width:none;width:100%;padding:0;margin:0;box-shadow:none}
   .pagebreak{break-before:page}
 }
 @media screen{ .pagebreak{border-top:2px dashed #94a3b8;margin-top:20px;padding-top:20px} }
@@ -879,24 +879,25 @@ function renderPaper(){
     }
     h += '</table><div class="pfoot">KEPS SCIENCE ACADEMY • Teacher\'s copy</div>';
   }
-  $("sheet").innerHTML = h;
+  $("sheet").innerHTML = '<div id="sheetBody">' + h + "</div>";
   fitToOnePage();
 }
-/* paper hamesha SIRF front side — ek A4 page par fit karo */
+/* paper hamesha SIRF front side — ek A4 page par fit karo.
+   (sheet screen par bilkul print jitni chaudi hai = 190mm, is liye naap durust hai) */
 function firstPageH(){
-  var sheet = $("sheet");
-  var r = sheet.getBoundingClientRect();
-  var pb = sheet.querySelector(".pagebreak");
+  var body = $("sheetBody") || $("sheet");
+  var r = body.getBoundingClientRect();
+  var pb = body.querySelector(".pagebreak");
   if (pb){
     var pr = pb.getBoundingClientRect();
     return pr.top - r.top;
   }
-  return sheet.scrollHeight;
+  return r.height;
 }
 function fitToOnePage(){
   var sheet = $("sheet");
   sheet.style.zoom = 1;
-  var maxH = 1030; /* A4 printable height @96dpi */
+  var maxH = 1000; /* A4 printable height @96dpi, thori safety margin ke sath */
   var z = 1, h = firstPageH(), guard = 0;
   while (h > maxH && z > 0.55 && guard < 20){
     z = Math.round((z - 0.05) * 100) / 100;
