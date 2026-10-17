@@ -83,13 +83,19 @@ td.urq{text-align:right}
 .pagebreak{page-break-before:always}
 .toolbar{max-width:800px;margin:0 auto;padding:14px 18px;display:flex;gap:10px;flex-wrap:wrap;background:var(--grey-bg)}
 footer.site{background:var(--navy);color:#cdd8ea;text-align:center;padding:22px;font-size:13px;margin-top:40px;border-radius:24px 24px 0 0}
+@page{size:A4;margin:12mm 10mm}
+.math{font-family:Georgia,"Times New Roman",serif}
+.urow{display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #eef2f7;flex-wrap:wrap}
+.btn.sm{padding:6px 12px;font-size:13px}
+.btn.danger{color:#b91c1c}
 @media print{
   body{background:#fff}
   .topbar,.toolbar,footer.site,#loginView,#setupView,#genView,#reviewView{display:none!important}
   #paperView{display:block!important}
-  .sheet{max-width:100%;padding:0}
-  .pagebreak{page-break-before:always}
+  .sheet{max-width:none;width:100%;padding:0;margin:0}
+  .pagebreak{break-before:page}
 }
+@media screen{ .pagebreak{border-top:2px dashed #94a3b8;margin-top:20px;padding-top:20px} }
 @media(max-width:760px){.hero{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.optgrid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -116,8 +122,8 @@ footer.site{background:var(--navy);color:#cdd8ea;text-align:center;padding:22px;
 <!-- ============ LOGIN ============ -->
 <div class="hero hidden" id="loginView">
   <div class="card">
-    <h2>🔐 Admin Sign In</h2>
-    <p class="sub">Paper generator sirf admin ke liye hai. Apna username aur password likhein.</p>
+    <h2>🔐 Sign In</h2>
+    <p class="sub">Paper generator login ke baad kaam karega. Apna username aur password likhein.</p>
     <label class="f">Username</label>
     <input type="text" id="loginUser" autocomplete="username" placeholder="Admin username">
     <label class="f">Password</label>
@@ -143,6 +149,23 @@ footer.site{background:var(--navy);color:#cdd8ea;text-align:center;padding:22px;
     <div class="st" data-s="3">3. Photos &amp; AI Draft</div>
     <div class="st" data-s="4">4. Review / Edit</div>
     <div class="st" data-s="5">5. Paper</div>
+  </div>
+
+  <div class="card hidden" id="adminPanel">
+    <h2>👑 Admin Panel — Users</h2>
+    <p class="sub">Jin ko ye paper service deni hai, un ke liye alag username/password banayein. Wo apne login se generator use kar sakenge.</p>
+    <div class="rowbtns" style="justify-content:flex-start">
+      <input type="text" id="nu_user" placeholder="Naya username" style="flex:1;min-width:160px">
+      <input type="text" id="nu_pass" placeholder="Password" style="flex:1;min-width:160px">
+      <button class="btn" id="nu_add">➕ User banayein</button>
+    </div>
+    <div id="usersList" style="margin-top:10px"></div>
+    <hr style="margin:14px 0;border:none;border-top:1px solid #e5e9f0">
+    <div class="rowbtns" style="justify-content:flex-start">
+      <input type="password" id="my_newpass" placeholder="Apna naya admin password" style="flex:1;min-width:160px">
+      <button class="btn ghost" id="my_pass_btn">🔑 Apna password badlein</button>
+    </div>
+    <p class="hint" style="margin-top:8px">Passwords aapki private Google Sheet mein mehfooz rehte hain — sirf aap dekh sakte hain.</p>
   </div>
 
   <div class="card" id="gs1">
@@ -220,6 +243,11 @@ footer.site{background:var(--navy);color:#cdd8ea;text-align:center;padding:22px;
 <div id="paperView" class="hidden">
   <div class="toolbar">
     <button class="btn" onclick="window.print()">🖨 Print / PDF</button>
+    <label class="hint" style="align-self:center">Print:</label>
+    <select id="g_sides" style="max-width:290px">
+      <option value="1">Sirf front side (1 page)</option>
+      <option value="2">Front + back (2 pages: paper + answer key)</option>
+    </select>
     <button class="btn ghost" id="btnKeyToggle">Answer Key: OFF</button>
     <button class="btn grey" id="btnBackReview">← Review</button>
   </div>
@@ -236,8 +264,34 @@ var CREDS = { user: sessionStorage.getItem("keps_pgen_u") || "", pass: sessionSt
 var DRAFT = null, PHOTOS = [];
 
 function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
-/* isolate math in Urdu/RTL text so it never mirrors */
-function bi(s){ return esc(s).replace(/\{[^{}]*\}/g, function(m){ return "<bdi>"+m+"</bdi>"; }); }
+/* ---- math typesetting: ASCII -> Unicode (x^2 -> x², log_3 -> log₃, (1/3) -> ⅓, sqrt(3) -> √(3)) ---- */
+var SUPM={"0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹","+":"⁺","-":"⁻","=":"⁼","(":"⁽",")":"⁾","n":"ⁿ","x":"ˣ"};
+var SUBM={"0":"₀","1":"₁","2":"₂","3":"₃","4":"₄","5":"₅","6":"₆","7":"₇","8":"₈","9":"₉","+":"₊","-":"₋","=":"₌","(":"₍",")":"₎","n":"ₙ","x":"ₓ","a":"ₐ"};
+function supm(s){ return String(s).split("").map(function(c){ return SUPM[c]||c; }).join(""); }
+function subm(s){ return String(s).split("").map(function(c){ return SUBM[c]||c; }).join(""); }
+function prettyMath(raw){
+  var s = String(raw==null?"":raw);
+  s = s.replace(/sqrt\(([^)]*)\)/g, "√($1)");
+  s = s.replace(/\^\{([^}]*)\}/g, function(m,g){ return supm(g); });
+  s = s.replace(/\^(\([^)]*\))/g, function(m,g){ return supm(g.slice(1,-1)); });
+  s = s.replace(/\^([A-Za-z0-9])/g, function(m,g){ return supm(g); });
+  s = s.replace(/_\{([^}]*)\}/g, function(m,g){ return subm(g); });
+  s = s.replace(/_(\([^)]*\))/g, function(m,g){ return subm(g.slice(1,-1)); });
+  s = s.replace(/_([A-Za-z0-9])/g, function(m,g){ return subm(g); });
+  var FR = {"(1/3)":"⅓","(2/3)":"⅔","(1/2)":"½","(1/4)":"¼","(3/4)":"¾","(1/5)":"⅕","(2/5)":"⅖","(1/8)":"⅛"};
+  for (var k in FR){ s = s.split(k).join(FR[k]); }
+  return s;
+}
+function mathHtml(raw){ return '<bdi class="math">'+esc(prettyMath(raw))+'</bdi>'; }
+function isMathWord(w){ return /[0-9^_=√]/.test(w); }
+/* isolate math runs in Urdu/RTL text so they never mirror; typeset them nicely */
+function bi(s){
+  return String(s==null?"":s).split(/(\{[^{}]*\})/g).map(function(part, idx){
+    if (idx % 2 === 1) return mathHtml(part.replace(/^\{|\}$/g, ""));
+    return part.split(" ").map(function(w){ return isMathWord(w) ? mathHtml(w) : esc(w); }).join(" ");
+  }).join("");
+}
+function eq(s){ return '<span class="math">'+esc(prettyMath(s))+'</span>'; }
 
 function apiCall(payload, timeoutMs){
   return new Promise(function(resolve, reject){
@@ -274,7 +328,7 @@ function show(id){
 }
 function boot(){
   if (!API){ show("setupView"); return; }
-  if (CREDS.user && CREDS.pass){ enterApp(); } else { show("loginView"); }
+  if (CREDS.user && CREDS.pass){ enterApp(sessionStorage.getItem("keps_pgen_r") || "user"); } else { show("loginView"); }
 }
 $("btnSaveUrl").addEventListener("click", function(){
   var u = $("setupUrl").value.trim();
@@ -299,7 +353,8 @@ $("btnLogin").addEventListener("click", function(){
     if (j.ok){
       sessionStorage.setItem("keps_pgen_u", u);
       sessionStorage.setItem("keps_pgen_p", p);
-      enterApp();
+      sessionStorage.setItem("keps_pgen_r", j.role || "user");
+      enterApp(j.role || "user");
     } else {
       err.textContent = "⚠️ " + (j.error || "Login nahi ho saka.");
       err.classList.remove("hidden");
@@ -310,13 +365,15 @@ $("btnLogin").addEventListener("click", function(){
   });
 });
 $("btnLogout").addEventListener("click", function(){
-  sessionStorage.removeItem("keps_pgen_u"); sessionStorage.removeItem("keps_pgen_p");
+  sessionStorage.removeItem("keps_pgen_u"); sessionStorage.removeItem("keps_pgen_p"); sessionStorage.removeItem("keps_pgen_r");
   CREDS = { user: "", pass: "" };
   $("adminTag").classList.add("hidden");
+  $("adminPanel").classList.add("hidden");
   show("loginView");
 });
-function enterApp(){
+function enterApp(role){
   $("adminTag").classList.remove("hidden");
+  if (role === "admin"){ $("adminPanel").classList.remove("hidden"); loadUsers(); }
   goStep(1); show("genView");
 }
 
@@ -438,8 +495,68 @@ function renderReview(){
 }
 $("btnBackGen").addEventListener("click", function(){ goStep(3); show("genView"); });
 
+/* ---------- admin panel (sirf admin ko nazar aata hai) ---------- */
+function adminCall(action, extra){
+  var p = { action: action, user: CREDS.user, pass: CREDS.pass };
+  for (var k in (extra || {})) p[k] = extra[k];
+  return apiCall(p, 60000);
+}
+function loadUsers(){
+  var box = $("usersList");
+  box.innerHTML = '<p class="hint">Load ho raha hai…</p>';
+  adminCall("admin_list").then(function(r){
+    if (!r.ok){ box.innerHTML = '<p class="hint">⚠️ ' + esc(r.error) + '</p>'; return; }
+    if (!r.users.length){ box.innerHTML = '<p class="hint">Abhi koi user nahi bana.</p>'; return; }
+    box.innerHTML = r.users.map(function(x){
+      var uq = String(x.user).replace(/'/g, "\\'");
+      return '<div class="urow"><b>' + esc(x.user) + '</b><span class="hint">' + esc(x.created) + '</span>' +
+        '<button class="btn ghost sm" onclick="chPass(\'' + uq + '\')">🔑 Password</button>' +
+        '<button class="btn ghost sm danger" onclick="delUser(\'' + uq + '\')">🗑 Delete</button></div>';
+    }).join("");
+  }).catch(function(e){ box.innerHTML = '<p class="hint">⚠️ ' + esc(e.message) + '</p>'; });
+}
+$("nu_add").addEventListener("click", function(){
+  var u = $("nu_user").value.trim(), p = $("nu_pass").value;
+  if (!u || !p){ alert("Username aur password dono likhein."); return; }
+  adminCall("admin_add", { newuser: u, newpass: p }).then(function(r){
+    if (!r.ok){ alert("⚠️ " + r.error); return; }
+    $("nu_user").value = ""; $("nu_pass").value = "";
+    alert("✓ " + r.msg);
+    loadUsers();
+  }).catch(function(e){ alert("⚠️ " + e.message); });
+});
+function delUser(u){
+  if (!confirm("User '" + u + "' delete kar dein?")) return;
+  adminCall("admin_del", { deluser: u }).then(function(r){
+    if (!r.ok){ alert("⚠️ " + r.error); return; }
+    loadUsers();
+  }).catch(function(e){ alert("⚠️ " + e.message); });
+}
+function chPass(u){
+  var np = prompt("Naya password — user '" + u + "':");
+  if (!np) return;
+  adminCall("admin_setpass", { target: u, newpass: np }).then(function(r){
+    alert(r.ok ? "✓ " + r.msg : "⚠️ " + r.error);
+  }).catch(function(e){ alert("⚠️ " + e.message); });
+}
+$("my_pass_btn").addEventListener("click", function(){
+  var np = $("my_newpass").value;
+  if (!np){ alert("Naya password likhein."); return; }
+  adminCall("admin_setpass", { target: CREDS.user, newpass: np }).then(function(r){
+    if (!r.ok){ alert("⚠️ " + r.error); return; }
+    CREDS.pass = np; sessionStorage.setItem("keps_pgen_p", np);
+    $("my_newpass").value = "";
+    alert("✓ " + r.msg);
+  }).catch(function(e){ alert("⚠️ " + e.message); });
+});
+
 /* ---------- paper render ---------- */
-var KEY_ON = false;
+var KEY_ON = false, SIDES = "1";
+$("g_sides").addEventListener("change", function(){
+  SIDES = $("g_sides").value;
+  $("btnKeyToggle").style.display = (SIDES === "2") ? "none" : "";
+  if (DRAFT) renderPaper();
+});
 $("btnKeyToggle").addEventListener("click", function(){
   KEY_ON = !KEY_ON;
   $("btnKeyToggle").textContent = "Answer Key: " + (KEY_ON ? "ON" : "OFF");
@@ -468,7 +585,7 @@ function renderPaper(){
   h += '<table class="q"><tr><th style="width:34px">No</th><th>English</th><th class="ur" dir="rtl">اردو</th></tr>';
   (DRAFT.mcqs || []).forEach(function(m, i){
     h += '<tr><td class="no">' + (i+1) + '</td><td class="enq">' + bi(m.stem_en) + '</td><td class="urq ur" dir="rtl">' + bi(m.stem_ur) + '</td></tr>';
-    h += '<tr><td></td><td class="enq opts">' + [0,1,2,3].map(function(j){ return "("+L[j]+") " + bi(m.options_en[j]); }).join(" &nbsp; ") + '</td><td class="urq ur opts" dir="rtl">' + [0,1,2,3].map(function(j){ return "("+L[j]+") " + bi(m.options_ur[j]); }).join(" &nbsp; ") + '</td></tr>';
+    h += '<tr><td></td><td class="enq opts">' + [0,1,2,3].map(function(j){ return eq("("+L[j]+") "+m.options_en[j]); }).join(" &nbsp; ") + '</td><td class="urq ur opts" dir="rtl">' + [0,1,2,3].map(function(j){ return mathHtml("("+L[j]+") "+m.options_ur[j]); }).join(" &nbsp; ") + '</td></tr>';
   });
   h += '</table>';
   /* Q2 / Q3 */
@@ -482,7 +599,8 @@ function renderPaper(){
     h += '</table>';
   });
   h += '<div class="pfoot">KEPS SCIENCE ACADEMY • AHMAD PUR SIAL, JHANG</div>';
-  if (KEY_ON){
+  var showKey = (SIDES === "2") ? true : KEY_ON;
+  if (showKey){
     h += '<div class="pagebreak"></div>';
     h += '<div class="rule-gold"></div><div class="rule-navy"></div>';
     h += '<h1 class="school">ANSWER KEY</h1><div class="city">' + esc(M.subject.toUpperCase()) + ' — ' + esc(M.chapter) + '</div>';
