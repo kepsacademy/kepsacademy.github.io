@@ -137,6 +137,14 @@ table.ph-info td{border:1px solid #555;padding:4px 8px}
 table.q{width:100%;border-collapse:collapse;margin:8px 0;font-size:13.5px}
 table.q td,table.q th{border:1px solid #555;padding:6px 8px;vertical-align:top}
 table.q th{background:#f0f0f0}
+table.mcq{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0;color:#000}
+table.mcq th{background:#f0f0f0;border:1px solid #555;padding:5px 8px;font-size:13px}
+table.mcq th.no{width:32px}
+table.mcq td{border:1px solid #555;padding:6px 8px;vertical-align:top}
+table.mcq td.no{text-align:center;font-weight:800}
+.mstem{font-weight:600;margin-bottom:5px}
+.mopts{display:flex;flex-wrap:wrap;gap:3px 14px;font-size:12.5px}
+.mopts b{font-weight:800}
 td.no{width:34px;text-align:center;font-weight:700}
 td.enq{text-align:left}
 td.urq{text-align:right}
@@ -301,6 +309,17 @@ table.info td{border:1px solid #666;padding:6px 10px;width:50%}
           <div><label class="f">Time allowed</label><input type="text" id="g_time" value="1 Hour"></div>
           <div><label class="f">Test type</label><input type="text" id="g_testtype" value="Weekly Test"></div>
         </div>
+        <div class="grid2">
+          <div><label class="f">Paper Pattern</label><select id="g_pattern">
+            <option value="full30">Full Test — 30 Marks (5 MCQ + Shorts)</option>
+            <option value="mcq20">MCQ Test — 20 Marks (20 MCQs)</option>
+            <option value="short20">Short Questions — 20 Marks (10 × 2)</option>
+          </select></div>
+          <div><label class="f">AI Model</label><select id="g_model">
+            <option value="flash">Gemini Flash — tez</option>
+            <option value="pro">Gemini Pro — behtar quality</option>
+          </select></div>
+        </div>
         <label class="f">Question nature <span class="hint">(AI inhi qisam ke sawal banayega)</span></label>
         <div class="checks" id="g_qnature">
           <label><input type="checkbox" value="Exercise questions" checked>Exercise</label>
@@ -365,6 +384,15 @@ table.info td{border:1px solid #666;padding:6px 10px;width:50%}
         <div class="rowbtns" style="justify-content:flex-start;margin-top:0">
           <input type="password" id="my_newpass" placeholder="Apna naya admin password" style="flex:1;min-width:160px">
           <button class="btn ghost" id="my_pass_btn">🔑 Apna password badlein</button>
+        </div>
+        <hr style="margin:14px 0;border:none;border-top:1px solid #e5e9f0">
+        <div class="rowbtns" style="justify-content:flex-start;margin-top:0;align-items:center">
+          <span class="hint" style="align-self:center">Default AI Model:</span>
+          <select id="adm_model" style="max-width:220px">
+            <option value="flash">Gemini Flash — tez</option>
+            <option value="pro">Gemini Pro — behtar quality</option>
+          </select>
+          <button class="btn ghost" id="adm_model_btn">💾 Save</button>
         </div>
         <p class="hint" style="margin-top:8px">Passwords aapki private Google Sheet mein mehfooz rehte hain — sirf aap dekh sakte hain.</p>
       </div>
@@ -461,6 +489,9 @@ function supm(s){ return String(s).split("").map(function(c){ return SUPM[c]||c;
 function subm(s){ return String(s).split("").map(function(c){ return SUBM[c]||c; }).join(""); }
 function prettyMath(raw){
   var s = String(raw==null?"":raw);
+  var SUBD = {"0":"₀","1":"₁","2":"₂","3":"₃","4":"₄","5":"₅","6":"₆","7":"₇","8":"₈","9":"₉"};
+  s = s.replace(/log([0-9])\(/g, function(m,d){ return "log"+SUBD[d]+"("; });
+  s = s.replace(/cbrt\(([^)]*)\)/g, "∛($1)");
   s = s.replace(/sqrt\(([^)]*)\)/g, "√($1)");
   s = s.replace(/\^\{([^}]*)\}/g, function(m,g){ return supm(g); });
   s = s.replace(/\^(\([^)]*\))/g, function(m,g){ return supm(g.slice(1,-1)); });
@@ -473,12 +504,24 @@ function prettyMath(raw){
   return s;
 }
 function mathHtml(raw){ return '<bdi class="math">'+esc(prettyMath(raw))+'</bdi>'; }
-function isMathWord(w){ return /[0-9^_=√]/.test(w); }
+/* Math lafz ko pehchano (variable ke single huruf aur function names samet) */
+function isMathWord(w){
+  if (/^(ln|log|sin|cos|tan|sec|csc|cot|sqrt|cbrt)$/.test(w)) return true;
+  return /[0-9(){}\[\]^_=+\-*/<>|√∛∜∑∏∫∂∆∇∈∉⊂⊃⊆⊇∪∩∀∃∧∨¬⇒⇔↔∞∝∠△□°′″‰×÷±¼½¾⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞²³¹₀₁₂₃₄₅₆₇₈₉]/.test(w) || /^[A-Za-z]$/.test(w);
+}
+/* Poori math expression EK <bdi> mein — warna RTL mein palat jati hai */
 function bi(s){
-  return String(s==null?"":s).split(/(\{[^{}]*\})/g).map(function(part, idx){
-    if (idx % 2 === 1) return mathHtml(part.replace(/^\{|\}$/g, ""));
-    return part.split(" ").map(function(w){ return isMathWord(w) ? mathHtml(w) : esc(w); }).join(" ");
-  }).join("");
+  s = prettyMath(String(s==null?"":s));
+  var toks = s.split(/(\s+)/), out = "", run = [];
+  function flush(){ if(run.length){ out += '<bdi class="math">'+esc(run.join(""))+"</bdi>"; run = []; } }
+  toks.forEach(function(w){
+    if(w === "") return;
+    if(/^\s+$/.test(w)){ if(run.length) run.push(" "); else out += w; return; }
+    if(isMathWord(w)) run.push(w);
+    else { flush(); out += esc(w); }
+  });
+  flush();
+  return out;
 }
 function eq(s){ return '<span class="math">'+esc(prettyMath(s))+'</span>'; }
 
@@ -741,6 +784,10 @@ $("btnDraft").addEventListener("click", function(){
   timer.classList.remove("hidden");
   var iv = setInterval(function(){ timer.textContent = "⏳ AI kaam kar raha hai… " + Math.floor((Date.now()-t0)/1000) + "s"; }, 500);
   var qn = Array.prototype.slice.call(document.querySelectorAll("#g_qnature input:checked")).map(function(c){ return c.value; });
+  PATTERN = $("g_pattern").value;
+  var notes = $("g_notes").value.trim();
+  var ov = PATTERNS[PATTERN].override;
+  if (ov) notes = (notes ? notes + "\n" : "") + ov;
   var brief = {
     class_name: "Class " + (SEL.cls === "9" ? "IX" : "X"),
     subject: SEL.subject,
@@ -748,13 +795,17 @@ $("btnDraft").addEventListener("click", function(){
     topics: SEL.topics.join("; "),
     board: "Punjab",
     difficulty: $("g_diff").value,
-    qnature: qn, notes: $("g_notes").value.trim()
+    qnature: qn, notes: notes, pattern: PATTERN
   };
-  authed({ action: "draft", brief: brief, images: PHOTOS }).then(function(j){
+  authed({ action: "draft", brief: brief, model: $("g_model").value, images: PHOTOS }).then(function(j){
     clearInterval(iv); timer.classList.add("hidden");
     btn.disabled = false;
     if (!j.ok){ err.textContent = "⚠️ " + j.error; err.classList.remove("hidden"); return; }
     DRAFT = j.draft;
+    if (j.fallback){
+      err.textContent = "⚠️ Pro model aapki key par nahi chala — Flash se paper banaya gaya hai.";
+      err.classList.remove("hidden");
+    }
     renderReview();
     showView("reviewView");
   }).catch(function(e){
@@ -816,7 +867,12 @@ $("btnMakePaper").addEventListener("click", function(){
 });
 
 /* ---------- paper render (PaperPoint-style, KEPS header, no logos) ---------- */
-var KEY_ON = false, SIDES = "1";
+var KEY_ON = false, SIDES = "1", PATTERN = "full30";
+var PATTERNS = {
+  full30:  { override: "" },
+  mcq20:   { override: "PAPER PATTERN OVERRIDE — isko neeche di gayi default tadad par tarjeeh dein: EXACTLY 20 MCQs banayein aur ZERO short questions. mcqs array mein 20 items hon, shorts2 aur shorts3 khaali arrays []. Har MCQ 1 mark ka hai (total 20 marks)." },
+  short20: { override: "PAPER PATTERN OVERRIDE — isko neeche di gayi default tadad par tarjeeh dein: ZERO MCQs aur EXACTLY 10 short questions (har ek 2 marks, total 20 marks). mcqs khaali [], shorts2 mein 10 items hon, shorts3 khaali []." }
+};
 var ROMAN = ["i","ii","iii","iv","v","vi","vii","viii","ix","x","xi","xii","xiii","xiv"];
 function todayStr(){
   var d = new Date(), M = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -833,49 +889,65 @@ function shortSection(title_en, title_ur, items){
   (items || []).forEach(function(s, i){
     var r = ROMAN[i] || (i+1);
     h += '<div class="pq"><div class="pq-en">(' + r + ') ' + bi(s.text_en) + '</div>' +
-         '<div class="pq-ur ur" dir="rtl">' + bi(s.text_ur) + ' (' + r + ')</div></div>';
+         '<div class="pq-ur ur" dir="rtl">(' + r + ') ' + bi(s.text_ur) + '</div></div>';
   });
   return h;
 }
 function renderPaper(){
   var M = pmeta(), L = ["A","B","C","D"], h = "";
+  var mcqs = DRAFT.mcqs || [], s2 = DRAFT.shorts2 || [], s3 = DRAFT.shorts3 || [];
+  var MARKS = (PATTERN === "full30") ? 30 : (mcqs.length + s2.length*2 + s3.length*3);
   h += '<div class="ph-rule"></div>';
   h += '<div class="ph-school">KEPS SCIENCE ACADEMY</div>';
   h += '<div class="ph-city"><span class="dia">◆</span> AHMAD PUR SIAL, JHANG <span class="dia">◆</span> &nbsp;|&nbsp; BOARD: PUNJAB BOARD</div>';
-  h += '<div class="ph-band"><span>' + esc(M.subject.toUpperCase()) + '</span><span>' + esc(M.testtype) + '</span><span>Total Marks: 30</span></div>';
+  h += '<div class="ph-band"><span>' + esc(M.subject.toUpperCase()) + '</span><span>' + esc(M.testtype) + '</span><span>Total Marks: ' + MARKS + '</span></div>';
   h += '<table class="ph-info"><tr>' +
     '<td><b>Name:</b> ________________</td><td><b>Class:</b> ' + M.cls + '</td><td><b>Roll No:</b> __________</td><td><b>Date:</b> ' + M.date + '</td></tr><tr>' +
-    '<td><b>Chapter:</b> ' + esc(M.chapter) + '</td><td><b>Time:</b> ' + esc(M.time) + '</td><td><b>Total Marks:</b> 30</td><td><b>Obt Marks:</b> ______</td></tr></table>';
-  /* Q1 MCQs */
-  h += '<div class="qhead"><span>Q.No.1: Choose the Correct Option.</span><span class="ur" dir="rtl">سوال نمبر 1: درست جواب کا انتخاب کریں۔</span></div>';
-  (DRAFT.mcqs || []).forEach(function(m, i){
-    h += '<div class="pq"><div class="pq-en"><b>' + (i+1) + '.</b> ' + bi(m.stem_en) +
-      '<div class="optrow">' + [0,1,2,3].map(function(j){
-        return '<span class="opt"><span class="circ">' + L[j] + '</span>' + mathHtml(m.options_en[j]) + '</span>';
-      }).join("") + '</div></div>' +
-      '<div class="pq-ur ur" dir="rtl">' + bi(m.stem_ur) + ' <b>.' + (i+1) + '</b>' +
-      '<div class="optrow">' + [0,1,2,3].map(function(j){
-        return '<span class="opt"><span class="circ">' + L[j] + '</span>' + mathHtml(m.options_ur[j]) + '</span>';
-      }).join("") + '</div></div></div>';
-  });
-  /* Q2 / Q3 */
-  h += shortSection("Q.No.2: Write short answers to any Five parts. [10]", "سوال نمبر 2: کوئی سے پانچ مختصر سوالات کے جواب لکھیں۔ [10]", DRAFT.shorts2);
-  h += shortSection("Q.No.3: Write short answers to any Five parts. [15]", "سوال نمبر 3: کوئی سے پانچ مختصر سوالات کے جواب لکھیں۔ [15]", DRAFT.shorts3);
+    '<td><b>Chapter:</b> ' + esc(M.chapter) + '</td><td><b>Time:</b> ' + esc(M.time) + '</td><td><b>Total Marks:</b> ' + MARKS + '</td><td><b>Obt Marks:</b> ______</td></tr></table>';
+  var ULBL = ["(الف)","(ب)","(ج)","(د)"];
+  function mcqTable(items, qno){
+    var t = '<div class="qhead"><span>Q.No.' + qno + ': Choose the Correct Option. [' + items.length + ']</span>' +
+      '<span class="ur" dir="rtl">سوال نمبر ' + qno + ': درست جواب کا انتخاب کریں۔ [' + items.length + ']</span></div>';
+    t += '<table class="mcq"><tr><th class="no">No.</th><th>English</th><th class="urh">اردو</th></tr>';
+    items.forEach(function(m, i){
+      t += '<tr><td class="no">' + (i+1) + '</td>' +
+        '<td><div class="mstem">' + bi(m.stem_en) + '</div><div class="mopts">' +
+        [0,1,2,3].map(function(j){ return '<span><b>(' + L[j] + ')</b> ' + bi(m.options_en[j]) + '</span>'; }).join("") +
+        '</div></td>' +
+        '<td dir="rtl"><div class="mstem">' + bi(m.stem_ur) + '</div><div class="mopts">' +
+        [0,1,2,3].map(function(j){ return '<span><b>' + ULBL[j] + '</b> ' + bi(m.options_ur[j]) + '</span>'; }).join("") +
+        '</div></td></tr>';
+    });
+    return t + '</table>';
+  }
+  if (PATTERN === "short20"){
+    var all = s2.concat(s3);
+    h += shortSection("Q.No.1: Write short answers to all parts. [" + MARKS + "]",
+      "سوال نمبر 1: تمام مختصر سوالات کے جواب لکھیں۔ [" + MARKS + "]", all);
+  } else {
+    if (mcqs.length) h += mcqTable(mcqs, 1);
+    if (PATTERN === "full30"){
+      h += shortSection("Q.No.2: Write short answers to any Five parts. [10]", "سوال نمبر 2: کوئی سے پانچ مختصر سوالات کے جواب لکھیں۔ [10]", s2);
+      h += shortSection("Q.No.3: Write short answers to any Five parts. [15]", "سوال نمبر 3: کوئی سے پانچ مختصر سوالات کے جواب لکھیں۔ [15]", s3);
+    }
+  }
   h += '<div class="pfoot">KEPS SCIENCE ACADEMY • AHMAD PUR SIAL, JHANG</div>';
   var showKey = (SIDES === "2") ? true : KEY_ON;
   if (showKey){
     h += '<div class="pagebreak"></div>';
     h += '<div class="ph-rule"></div>';
     h += '<div class="ph-school">ANSWER KEY</div><div class="ph-city">' + esc(M.subject.toUpperCase()) + ' — ' + esc(M.chapter) + '</div>';
-    h += '<div class="secttl">Q.No.1 — MCQs</div><table class="q"><tr><th>Q</th><th>Answer</th><th>Q</th><th>Answer</th></tr>';
-    var mc = DRAFT.mcqs || [];
-    for (var i = 0; i < mc.length; i += 2){
-      h += '<tr><td class="no">' + (i+1) + '</td><td class="enq"><b>' + esc((mc[i].answer || "").toUpperCase()) + '</b></td>';
-      if (mc[i+1]) h += '<td class="no">' + (i+2) + '</td><td class="enq"><b>' + esc((mc[i+1].answer || "").toUpperCase()) + '</b></td>';
-      else h += '<td></td><td></td>';
-      h += '</tr>';
+    if (mcqs.length){
+      h += '<div class="secttl">Q.No.1 — MCQs</div><table class="q"><tr><th>Q</th><th>Answer</th><th>Q</th><th>Answer</th></tr>';
+      for (var i = 0; i < mcqs.length; i += 2){
+        h += '<tr><td class="no">' + (i+1) + '</td><td class="enq"><b>' + esc((mcqs[i].answer || "").toUpperCase()) + '</b></td>';
+        if (mcqs[i+1]) h += '<td class="no">' + (i+2) + '</td><td class="enq"><b>' + esc((mcqs[i+1].answer || "").toUpperCase()) + '</b></td>';
+        else h += '<td></td><td></td>';
+        h += '</tr>';
+      }
+      h += '</table>';
     }
-    h += '</table><div class="pfoot">KEPS SCIENCE ACADEMY • Teacher\'s copy</div>';
+    h += '<div class="pfoot">KEPS SCIENCE ACADEMY • Teacher\'s copy</div>';
   }
   $("sheet").innerHTML = '<div id="sheetBody">' + h + "</div>";
   fitToOnePage();
@@ -988,7 +1060,15 @@ function loadUsers(){
         '<button class="btn ghost sm danger" onclick="delUser(\'' + uq + '\')">🗑 Delete</button></div>';
     }).join("");
   }).catch(function(e){ box.innerHTML = '<p class="hint">⚠️ ' + esc(e.message) + '</p>'; });
+  adminCall("admin_model").then(function(r){
+    if (r.ok && $("adm_model")) $("adm_model").value = r.model || "flash";
+  }).catch(function(e){});
 }
+$("adm_model_btn").addEventListener("click", function(){
+  adminCall("admin_model", { model: $("adm_model").value }).then(function(r){
+    alert(r.ok ? "✓ Default model save ho gaya: " + r.model : "⚠️ " + r.error);
+  }).catch(function(e){ alert("⚠️ " + e.message); });
+});
 $("nu_add").addEventListener("click", function(){
   var u = $("nu_user").value.trim(), p = $("nu_pass").value;
   if (!u || !p){ alert("Username aur password dono likhein."); return; }
