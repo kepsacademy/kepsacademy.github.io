@@ -26,6 +26,9 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
 .hidden{display:none!important}
+.logintabs{display:flex;gap:8px;margin-bottom:16px}
+.ltab{flex:1;padding:11px;border:1.5px solid var(--line);background:#f4f6fb;border-radius:10px;font-weight:700;cursor:pointer;font-size:14.5px;color:var(--ink)}
+.ltab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 .ur{font-family:var(--urfont);line-height:2}
 .sheet .ur{line-height:2.2}
 /* ---------- topbar ---------- */
@@ -197,8 +200,12 @@ table.info td{border:1px solid #666;padding:6px 10px;width:50%}
 <div class="centerwrap hidden" id="loginView">
   <div class="hero">
     <div class="card">
-      <h2>🔐 Sign In</h2>
-      <p class="sub">Paper generator login ke baad kaam karega. Apna username aur password likhein.</p>
+      <div class="logintabs">
+        <button class="ltab on" id="tabUser" type="button">👤 User Login</button>
+        <button class="ltab" id="tabAdmin" type="button">👑 Admin Login</button>
+      </div>
+      <h2 id="loginTitle">🔐 User Sign In</h2>
+      <p class="sub" id="loginSub">Apna username aur password likhein.</p>
       <label class="f">Username</label>
       <input type="text" id="loginUser" autocomplete="username" placeholder="Username">
       <label class="f">Password</label>
@@ -534,6 +541,19 @@ $("btnSaveUrl").addEventListener("click", function(){
   $("setupView").classList.add("hidden");
   $("loginView").classList.remove("hidden");
 });
+/* ---------- separate admin / user login ---------- */
+var LOGIN_MODE = "user";
+function setLoginMode(m){
+  LOGIN_MODE = m;
+  $("tabUser").classList.toggle("on", m === "user");
+  $("tabAdmin").classList.toggle("on", m === "admin");
+  $("loginTitle").textContent = (m === "admin") ? "🔐 Admin Sign In" : "🔐 User Sign In";
+  $("loginSub").textContent = (m === "admin") ? "Admin username aur password likhein." : "Apna username aur password likhein.";
+  $("loginErr").classList.add("hidden");
+}
+$("tabUser").addEventListener("click", function(){ setLoginMode("user"); });
+$("tabAdmin").addEventListener("click", function(){ setLoginMode("admin"); });
+if (window.location.search.indexOf("admin=1") !== -1) setLoginMode("admin");
 $("btnLogin").addEventListener("click", function(){
   var u = $("loginUser").value.trim(), p = $("loginPass").value;
   var err = $("loginErr"); err.classList.add("hidden");
@@ -543,6 +563,16 @@ $("btnLogin").addEventListener("click", function(){
   authed({ action: "ping" }).then(function(j){
     btn.disabled = false; btn.textContent = "Sign In to Continue";
     if (j.ok){
+      if (LOGIN_MODE === "admin" && j.role !== "admin"){
+        err.textContent = "⚠️ Ye admin account nahi hai — 👤 User Login tab istemal karein.";
+        err.classList.remove("hidden");
+        return;
+      }
+      if (LOGIN_MODE === "user" && j.role === "admin"){
+        err.textContent = "⚠️ Ye admin account hai — 👑 Admin Login tab istemal karein.";
+        err.classList.remove("hidden");
+        return;
+      }
       sessionStorage.setItem("keps_pgen_u", u);
       sessionStorage.setItem("keps_pgen_p", p);
       sessionStorage.setItem("keps_pgen_r", j.role || "user");
