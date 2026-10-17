@@ -247,8 +247,12 @@ function apiCall(payload, timeoutMs){
     xhr.onreadystatechange = function(){
       if (xhr.readyState === 4 && !done){
         done = true; clearTimeout(timer);
-        try { resolve(JSON.parse(xhr.responseText)); }
-        catch(e){ reject(new Error("Server ka jawab samajh nahi aaya.")); }
+        var txt = xhr.responseText || "";
+        try { resolve(JSON.parse(txt)); }
+        catch(e){
+          var hint = txt.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().substring(0, 140);
+          reject(new Error("Server ka jawab samajh nahi aaya." + (hint ? ' Server ne ye bheja: "' + hint + '"' : " (koi jawab nahi aaya)")));
+        }
       }
     };
     xhr.onerror = function(){ if(!done){ done = true; clearTimeout(timer); reject(new Error("Server se rabta nahi ho saka.")); } };
