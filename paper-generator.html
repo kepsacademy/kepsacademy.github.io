@@ -97,6 +97,26 @@ textarea{min-height:64px;resize:vertical}
 .step .sn{width:32px;height:32px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
 .step b{font-size:14px}
 .step span{font-size:12.5px;color:var(--muted)}
+/* ---------- AI chat ---------- */
+.chatwrap{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 170px);min-height:480px}
+.chathead{background:linear-gradient(120deg,var(--navy),#1c3f7e);color:#fff;padding:16px 20px}
+.chathead h2{font-size:18px}
+.chathead p{opacity:.85;font-size:13px;margin-top:2px}
+#chatMsgs{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px;background:#f7f9fd}
+.msg{max-width:82%;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.55;white-space:pre-wrap;word-wrap:break-word}
+.msg.user{align-self:flex-end;background:var(--primary);color:#fff;border-bottom-right-radius:4px}
+.msg.model{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg.model.typing{opacity:.6}
+.speccard{background:#eef4ff;border:1.5px solid var(--primary);border-radius:12px;padding:14px 16px;margin-top:8px}
+.speccard h4{font-size:15px;margin-bottom:8px}
+.speccard .sr{display:flex;justify-content:space-between;font-size:13.5px;padding:3px 0;border-bottom:1px dashed var(--line)}
+.speccard .sr:last-of-type{border-bottom:none}
+.speccard .sr b{color:var(--navy)}
+.chatinput{display:flex;gap:10px;padding:14px;border-top:1px solid var(--line);background:#fff}
+.chatinput input{flex:1;border:1.5px solid var(--line);border-radius:24px;padding:11px 18px;font-size:14px;outline:none}
+.chatinput input:focus{border-color:var(--primary)}
+.chatinput button{border:none;background:var(--primary);color:#fff;border-radius:24px;padding:11px 22px;font-size:14px;font-weight:700;cursor:pointer}
+.chatinput button:disabled{opacity:.5}
 .notice .ur{text-align:right;line-height:2.3;font-size:15px}
 .bell{width:34px;height:34px;border-radius:50%;background:#e11d48;color:#fff;display:inline-flex;align-items:center;justify-content:center}
 /* ---------- books grid ---------- */
@@ -256,6 +276,7 @@ table.info td{border:1px solid #666;padding:6px 10px;width:50%}
 
   <div class="sidebar" id="sidebar">
     <div class="navitem on" data-view="dashboardView"><span class="ic">🏠</span>Dashboard</div>
+    <div class="navitem" data-view="chatView"><span class="ic">💬</span>AI Assistant</div>
     <div class="navitem" id="navBooks"><span class="ic">📚</span>Punjab Textbook</div>
     <div class="submenu" id="classMenu">
       <div class="navitem" data-cls="9"><span class="ic">›</span>Class IX</div>
@@ -320,6 +341,21 @@ table.info td{border:1px solid #666;padding:6px 10px;width:50%}
           ✅ Chapter ki <b>photos</b> lagana na bhoolein — AI inhi se questions banata hai۔<br>
           ✅ Paper banne ke baad <b>Review</b> zaroor karein — har sawal edit ho sakta hai۔<br>
           ✅ <b>Print</b> dabane par "Save as PDF" se A4 PDF ban jayegi۔
+        </div>
+      </div>
+    </div>
+
+    <!-- AI CHAT -->
+    <div class="view hidden" id="chatView">
+      <div class="chatwrap">
+        <div class="chathead">
+          <h2>💬 AI Assistant</h2>
+          <p>Mujh se baat karein — class, subject aur chapter batayein, main paper ki tayyari kar doon ga.</p>
+        </div>
+        <div id="chatMsgs"></div>
+        <div class="chatinput">
+          <input type="text" id="chatInput" placeholder="Yahan likhein… masalan: 9th math chapter 2 ka paper banao" autocomplete="off">
+          <button id="chatSend">Bhejein ➤</button>
         </div>
       </div>
     </div>
@@ -721,6 +757,120 @@ function renderDashboard(){
     }).catch(function(e){});
   }
 }
+
+/* ---------- AI chat assistant ---------- */
+var CHAT_HIST = [];
+var CHAT_WELCOMED = false;
+function escHtml(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function addMsg(role, text){
+  CHAT_HIST.push({ role: role, text: text });
+  renderChat();
+}
+function renderChat(){
+  var box = $("chatMsgs"); box.innerHTML = "";
+  CHAT_HIST.forEach(function(m){
+    var d = document.createElement("div");
+    d.className = "msg " + m.role;
+    if (m.html){ d.innerHTML = m.html; }
+    else { d.textContent = m.text; }
+    box.appendChild(d);
+  });
+  box.scrollTop = box.scrollHeight;
+}
+function parseSpec(text){
+  var m = /```paperspec\s*([\s\S]*?)```/.exec(text || "");
+  if (!m) return null;
+  try { return JSON.parse(m[1].trim()); } catch(e){ return null; }
+}
+function cleanReply(text){
+  return (text || "").replace(/```paperspec[\s\S]*?```/g, "").trim();
+}
+function matchSubject(cls, name){
+  var keys = Object.keys(LIB[cls] || {});
+  name = (name || "").toLowerCase().trim();
+  for (var i = 0; i < keys.length; i++){ if (keys[i].toLowerCase() === name) return keys[i]; }
+  for (var j = 0; j < keys.length; j++){ if (keys[j].toLowerCase().indexOf(name) !== -1 || name.indexOf(keys[j].toLowerCase()) !== -1) return keys[j]; }
+  return null;
+}
+function matchChapter(cls, subj, chap){
+  var chs = (LIB[cls][subj] || {}).ch || [];
+  chap = (chap || "").toLowerCase().trim().replace(/^\d+\.\s*/, "");
+  for (var i = 0; i < chs.length; i++){
+    var c = chs[i].toLowerCase().replace(/^\d+\.\s*/, "");
+    if (c === chap) return chs[i];
+  }
+  for (var j = 0; j < chs.length; j++){
+    var c2 = chs[j].toLowerCase().replace(/^\d+\.\s*/, "");
+    if (c2.indexOf(chap) !== -1 || chap.indexOf(c2) !== -1) return chs[j];
+  }
+  return null;
+}
+function showSpecCard(spec){
+  var plabel = { full30: "Full Test — 30 Marks", mcq20: "MCQ Test — 20 Marks", short20: "Short Questions — 20 Marks" };
+  var html = '<div class="speccard"><h4>📋 Paper ki tayyari ho gayi!</h4>' +
+    '<div class="sr"><span>Class</span><b>' + escHtml(spec.class === "10" ? "X" : "IX") + '</b></div>' +
+    '<div class="sr"><span>Subject</span><b>' + escHtml(spec.subject) + '</b></div>' +
+    '<div class="sr"><span>Chapter</span><b>' + escHtml(spec.chapter) + '</b></div>' +
+    '<div class="sr"><span>Pattern</span><b>' + escHtml(plabel[spec.pattern] || spec.pattern) + '</b></div>' +
+    '<div class="sr"><span>Difficulty</span><b>' + escHtml(spec.difficulty || "mixed") + '</b></div>' +
+    (spec.notes ? '<div class="sr"><span>Notes</span><b>' + escHtml(spec.notes) + '</b></div>' : '') +
+    '<div class="rowbtns" style="margin-top:10px"><button class="btn" id="specGo">✅ Theek hai, photos lagayein →</button></div></div>';
+  CHAT_HIST.push({ role: "model", html: html, text: "" });
+  renderChat();
+  $("specGo").addEventListener("click", function(){ applySpec(spec); });
+}
+function applySpec(spec){
+  var cls = (spec.class === "10") ? "10" : "9";
+  SEL.cls = cls; SEL.topics = [];
+  var subj = matchSubject(cls, spec.subject) || spec.subject;
+  SEL.subject = subj;
+  var chap = (LIB[cls][subj]) ? (matchChapter(cls, subj, spec.chapter) || spec.chapter) : spec.chapter;
+  SEL.chapters = [chap];
+  if ($("g_pattern")) $("g_pattern").value = spec.pattern || "full30";
+  if ($("g_diff")) $("g_diff").value = spec.difficulty || "mixed";
+  if ($("g_notes") && spec.notes) $("g_notes").value = spec.notes;
+  $("draftSelInfo").textContent = subj + " (Class " + (cls === "9" ? "IX" : "X") + ") — " + chap;
+  addMsg("model", "Zaroor! Neeche chapter ki photos lagayein (8 tak), phir \"AI se draft banao\" dabayein. 📸");
+  showView("draftView");
+}
+function sendChat(){
+  var inp = $("chatInput");
+  var t = inp.value.trim();
+  if (!t) return;
+  inp.value = "";
+  addMsg("user", t);
+  var typing = document.createElement("div");
+  typing.className = "msg model typing"; typing.textContent = "likh raha hai…";
+  $("chatMsgs").appendChild(typing);
+  $("chatMsgs").scrollTop = $("chatMsgs").scrollHeight;
+  $("chatSend").disabled = true;
+  var payload = { action: "chat", messages: CHAT_HIST.filter(function(m){ return m.text; }).map(function(m){ return { role: m.role, text: m.text }; }) };
+  authed(payload).then(function(r){
+    typing.remove(); $("chatSend").disabled = false;
+    if (r.ok){
+      var spec = parseSpec(r.reply);
+      var clean = cleanReply(r.reply);
+      if (clean) addMsg("model", clean);
+      if (spec) showSpecCard(spec);
+    } else {
+      addMsg("model", "⚠️ " + (r.error || "Jawab nahi aaya."));
+    }
+  }).catch(function(e){
+    typing.remove(); $("chatSend").disabled = false;
+    addMsg("model", "⚠️ " + e.message);
+  });
+}
+$("chatSend").addEventListener("click", sendChat);
+$("chatInput").addEventListener("keydown", function(e){ if (e.key === "Enter") sendChat(); });
+/* chat khulne par welcome */
+var _origShowView = showView;
+showView = function(id){
+  _origShowView(id);
+  if (id === "chatView" && !CHAT_WELCOMED){
+    CHAT_WELCOMED = true;
+    addMsg("model", "Assalam-o-Alaikum! 👋 Main aapka AI assistant hoon. Paper banane ke liye bas batayein — masalan: \"9th class math chapter 2 ka 30 marks ka paper banao\".");
+  }
+};
 
 /* ---------- books ---------- */
 function openBooks(cls){
