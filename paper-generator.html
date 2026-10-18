@@ -83,6 +83,20 @@ textarea{min-height:64px;resize:vertical}
 .stat .t{font-size:13.5px;color:var(--muted);margin-top:4px}
 .notice{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px 22px}
 .notice h3{display:flex;align-items:center;gap:10px;font-size:17px;margin-bottom:10px}
+.rolebadge{font-size:12.5px;background:rgba(255,255,255,.22);padding:3px 12px;border-radius:20px;margin-left:6px;white-space:nowrap}
+.sechead{margin:22px 0 12px}
+.sechead h3{font-size:17px}
+.actioncard{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:18px;display:flex;align-items:center;gap:14px;cursor:pointer}
+.actioncard:hover{border-color:var(--primary);box-shadow:0 4px 12px rgba(11,30,63,.08)}
+.actioncard .ai{font-size:32px;flex-shrink:0}
+.actioncard .at{font-weight:800;font-size:15px}
+.actioncard .ad{font-size:13px;color:var(--muted);margin-top:2px}
+.actioncard .go{margin-left:auto;font-size:20px;color:var(--primary);font-weight:800;flex-shrink:0}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:18px}
+.step{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;gap:12px;align-items:flex-start}
+.step .sn{width:32px;height:32px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
+.step b{font-size:14px}
+.step span{font-size:12.5px;color:var(--muted)}
 .notice .ur{text-align:right;line-height:2.3;font-size:15px}
 .bell{width:34px;height:34px;border-radius:50%;background:#e11d48;color:#fff;display:inline-flex;align-items:center;justify-content:center}
 /* ---------- books grid ---------- */
@@ -254,7 +268,47 @@ table.info td{border:1px solid #666;padding:6px 10px;width:50%}
   <div class="main"><div id="mainCol">
     <!-- DASHBOARD -->
     <div class="view" id="dashboardView">
-      <div class="welcome"><h1>Welcome, <span id="dashUser">—</span></h1><p>All systems are running smoothly!</p></div>
+      <div class="welcome"><h1>Welcome, <span id="dashUser">—</span><span id="roleBadge" class="rolebadge"></span></h1><p id="dashSub">All systems are running smoothly!</p></div>
+      <div class="sechead"><h3>⚡ Quick Actions</h3></div>
+      <div class="dashgrid">
+        <div class="actioncard" data-goto="9">
+          <div class="ai">📕</div>
+          <div><div class="at">Naya Paper — Class IX</div><div class="ad">Book chunein, photos lagayein</div></div>
+          <div class="go">→</div>
+        </div>
+        <div class="actioncard" data-goto="10">
+          <div class="ai">📗</div>
+          <div><div class="at">Naya Paper — Class X</div><div class="ad">Book chunein, photos lagayein</div></div>
+          <div class="go">→</div>
+        </div>
+        <div class="actioncard" id="dashSavedCard">
+          <div class="ai">💾</div>
+          <div><div class="at">Saved Papers</div><div class="ad"><span id="statSaved2">0</span> papers save hain</div></div>
+          <div class="go">→</div>
+        </div>
+      </div>
+      <div id="dashAdmin" class="hidden">
+        <div class="sechead"><h3>👑 Admin Panel</h3></div>
+        <div class="dashgrid">
+          <div class="stat" id="dashUsersCard"><div class="n" id="statUsers">–</div><div class="t">Total Users</div></div>
+          <div class="stat" id="dashModelCard"><div class="n" id="statModel" style="font-size:20px">–</div><div class="t">Default AI Model</div></div>
+          <div class="actioncard" id="dashAdminGo">
+            <div class="ai">👑</div>
+            <div><div class="at">Admin Panel kholein</div><div class="ad">Users, password, AI model</div></div>
+            <div class="go">→</div>
+          </div>
+        </div>
+      </div>
+      <div id="dashHow" class="hidden">
+        <div class="sechead"><h3>📝 Paper kaise banayein?</h3></div>
+        <div class="steps">
+          <div class="step"><div class="sn">1</div><div><b>Book chunein</b><br><span>Class IX ya X ki kitab</span></div></div>
+          <div class="step"><div class="sn">2</div><div><b>Photos lagayein</b><br><span>Chapter ki 8 tak photos</span></div></div>
+          <div class="step"><div class="sn">3</div><div><b>Review karein</b><br><span>Har sawal edit ho sakta hai</span></div></div>
+          <div class="step"><div class="sn">4</div><div><b>Print karein</b><br><span>Save as PDF — A4</span></div></div>
+        </div>
+      </div>
+      <div class="sechead"><h3>📚 Library</h3></div>
       <div class="dashgrid">
         <div class="stat" data-goto="9"><div class="n" id="statSub9">–</div><div class="t">Class IX Subjects</div></div>
         <div class="stat" data-goto="10"><div class="n" id="statSub10">–</div><div class="t">Class X Subjects</div></div>
@@ -548,10 +602,14 @@ document.querySelectorAll(".sidebar .navitem[data-view]").forEach(function(n){
 document.querySelectorAll(".sidebar .navitem[data-cls]").forEach(function(n){
   n.addEventListener("click", function(){ openBooks(n.getAttribute("data-cls")); });
 });
-document.querySelectorAll(".stat[data-goto]").forEach(function(s){
+document.querySelectorAll(".stat[data-goto],.actioncard[data-goto]").forEach(function(s){
   s.addEventListener("click", function(){ openBooks(s.getAttribute("data-goto")); });
 });
 $("statSavedCard").addEventListener("click", function(){ renderSaved(); showView("savedView"); });
+$("dashSavedCard").addEventListener("click", function(){ renderSaved(); showView("savedView"); });
+$("dashAdminGo").addEventListener("click", function(){ showView("adminView"); });
+$("dashUsersCard").addEventListener("click", function(){ showView("adminView"); });
+$("dashModelCard").addEventListener("click", function(){ showView("adminView"); });
 $("navBooks").addEventListener("click", function(){
   var m = $("classMenu"); m.style.display = (m.style.display === "none") ? "" : "none";
 });
@@ -639,7 +697,28 @@ function enterApp(role){
   $("statSub9").textContent = Object.keys(LIB["9"]).length;
   $("statSub10").textContent = Object.keys(LIB["10"]).length;
   updateSavedStat();
+  renderDashboard();
   showView("dashboardView");
+}
+/* Role ke hisaab se dashboard: admin ko Admin Panel, user ko guide */
+function renderDashboard(){
+  var isAdmin = (ROLE === "admin");
+  $("roleBadge").textContent = isAdmin ? "👑 Admin" : "👤 User";
+  $("dashSub").textContent = isAdmin
+    ? "Users, AI model aur papers — sab kuch yahin se control karein."
+    : "Neeche se Class chunein aur apna paper banayein.";
+  $("dashAdmin").classList.toggle("hidden", !isAdmin);
+  $("dashHow").classList.toggle("hidden", isAdmin);
+  var n = getSaved().length;
+  $("statSaved2").textContent = n;
+  if (isAdmin){
+    adminCall("admin_list").then(function(r){
+      if (r.ok) $("statUsers").textContent = r.users.length;
+    }).catch(function(e){});
+    adminCall("admin_model").then(function(r){
+      if (r.ok) $("statModel").textContent = (r.model === "pro") ? "Pro" : "Flash";
+    }).catch(function(e){});
+  }
 }
 
 /* ---------- books ---------- */
@@ -950,7 +1029,7 @@ function renderPaper(){
     h += '<div class="pfoot">KEPS SCIENCE ACADEMY • Teacher\'s copy</div>';
   }
   $("sheet").innerHTML = '<div id="sheetBody">' + h + "</div>";
-  fitToOnePage();
+  refit();
 }
 /* paper hamesha SIRF front side — ek A4 page par fit karo.
    (sheet screen par bilkul print jitni chaudi hai = 190mm, is liye naap durust hai) */
@@ -981,6 +1060,19 @@ if (document.fonts && document.fonts.ready){
     if (!$("paperView").classList.contains("hidden") && DRAFT) fitToOnePage();
   });
 }
+/* Fonts (khaas taur par 5.5MB Jameel Noori) dair se load hote hain — un ke
+   aane ke baad naap badal jati hai. Is liye render ke baad fonts ka
+   intezar karke fit dobara chalao, aur print se ain pehle bhi. */
+function refit(){
+  fitToOnePage();
+  if (document.fonts && document.fonts.load){
+    Promise.all([
+      document.fonts.load('16px "Jameel Noori Nastaleeq"', 'ا'),
+      document.fonts.load('16px "STIX Math"', 'x')
+    ]).then(function(){ fitToOnePage(); }).catch(function(){});
+  }
+}
+window.addEventListener("beforeprint", function(){ fitToOnePage(); });
 function showPaperView(){
   $("appShell").classList.add("hidden");
   $("paperView").classList.remove("hidden");
