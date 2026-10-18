@@ -350,7 +350,7 @@ table.info td{border:1px solid #666;padding:6px 10px;width:50%}
       <div class="chatwrap">
         <div class="chathead">
           <h2>💬 AI Assistant</h2>
-          <p>Mujh se baat karein — class, subject aur chapter batayein, 📷 se chapter ki photos bhi bhej sakte hain. Main paper ki tayyari kar doon ga.</p>
+          <p>Mujh se baat karein — class, subject, chapter batayein aur 📷 se chapter ki photos bhejein. Phir <b>ek tap</b> mein paper tayyar! 📄</p>
         </div>
         <div id="chatMsgs"></div>
         <div class="chatinput">
@@ -809,6 +809,7 @@ function matchChapter(cls, subj, chap){
 }
 function showSpecCard(spec){
   var plabel = { full30: "Full Test — 30 Marks", mcq20: "MCQ Test — 20 Marks", short20: "Short Questions — 20 Marks" };
+  var hasPhotos = CHAT_PHOTOS.length > 0;
   var html = '<div class="speccard"><h4>📋 Paper ki tayyari ho gayi!</h4>' +
     '<div class="sr"><span>Class</span><b>' + escHtml(spec.class === "10" ? "X" : "IX") + '</b></div>' +
     '<div class="sr"><span>Subject</span><b>' + escHtml(spec.subject) + '</b></div>' +
@@ -816,10 +817,53 @@ function showSpecCard(spec){
     '<div class="sr"><span>Pattern</span><b>' + escHtml(plabel[spec.pattern] || spec.pattern) + '</b></div>' +
     '<div class="sr"><span>Difficulty</span><b>' + escHtml(spec.difficulty || "mixed") + '</b></div>' +
     (spec.notes ? '<div class="sr"><span>Notes</span><b>' + escHtml(spec.notes) + '</b></div>' : '') +
-    '<div class="rowbtns" style="margin-top:10px"><button class="btn" id="specGo">✅ Theek hai, photos lagayein →</button></div></div>';
+    (hasPhotos ? '<div class="sr"><span>Photos</span><b>📷 ' + CHAT_PHOTOS.length + ' lag gayin</b></div>' : '') +
+    '<div class="rowbtns" style="margin-top:10px">' +
+    (hasPhotos
+      ? '<button class="btn" id="specGo">🚀 Paper banao</button>'
+      : '<button class="btn" id="specGo">✅ Theek hai, photos lagayein →</button>') +
+    '</div></div>';
   CHAT_HIST.push({ role: "model", html: html, text: "" });
   renderChat();
-  $("specGo").addEventListener("click", function(){ applySpec(spec); });
+  $("specGo").addEventListener("click", function(){
+    if (CHAT_PHOTOS.length) chatMakePaper(spec); else applySpec(spec);
+  });
+}
+/* chat se seedha paper: spec + photos -> draft -> paper (ek tap mein) */
+function chatMakePaper(spec){
+  var cls = (spec.class === "10") ? "10" : "9";
+  SEL.cls = cls; SEL.topics = [];
+  var subj = matchSubject(cls, spec.subject) || spec.subject;
+  SEL.subject = subj;
+  var chap = (LIB[cls][subj]) ? (matchChapter(cls, subj, spec.chapter) || spec.chapter) : spec.chapter;
+  SEL.chapters = [chap];
+  PATTERN = spec.pattern || "full30";
+  addMsg("model", "🚀 Paper bana raha hoon… thoda intezar karein.");
+  var typing = document.createElement("div");
+  typing.className = "msg model typing"; typing.textContent = "AI paper likh raha hai…";
+  $("chatMsgs").appendChild(typing);
+  $("chatMsgs").scrollTop = $("chatMsgs").scrollHeight;
+  var notes = (spec.notes ? spec.notes + "\n" : "") + (PATTERNS[PATTERN].override || "") +
+    "\nQUALITY RULES: Take ALL questions LAFZ-BA-LAFZ from the attached chapter photos only (MCQs from the exercise MCQ section, short questions from the exercise short questions). Never invent or paraphrase questions. Read every photo carefully at full detail.";
+  var brief = {
+    class_name: "Class " + (cls === "9" ? "IX" : "X"),
+    subject: subj, chapter: chap, topics: "", board: "Punjab",
+    difficulty: spec.difficulty || "mixed",
+    qnature: [], notes: notes, pattern: PATTERN
+  };
+  authed({ action: "draft", brief: brief, model: "pro", images: CHAT_PHOTOS.slice(0, 8) }).then(function(j){
+    typing.remove();
+    if (!j.ok){ addMsg("model", "⚠️ " + (j.error || "Paper nahi ban saka — dobara try karein.")); return; }
+    DRAFT = j.draft;
+    PHOTOS = CHAT_PHOTOS.slice(0, 8); CHAT_PHOTOS = [];
+    PAPER_FROM = "chatView";
+    if (j.fallback) addMsg("model", "⚠️ Pro nahi chala to Flash se banaya hai.");
+    addMsg("model", "✅ Paper tayyar hai! 📄 Neeche dekh lein — Print dabakar PDF nikal lein.");
+    renderPaper(); showPaperView();
+  }).catch(function(e){
+    typing.remove();
+    addMsg("model", "⚠️ " + e.message + " — dobara try karein.");
+  });
 }
 function applySpec(spec){
   var cls = (spec.class === "10") ? "10" : "9";
@@ -1291,6 +1335,7 @@ $("g_sides").addEventListener("change", function(){
 });
 $("btnBackReview").addEventListener("click", function(){
   if (PAPER_FROM === "savedView"){ renderSaved(); showView("savedView"); }
+  else if (PAPER_FROM === "chatView"){ $("appShell").classList.remove("hidden"); $("paperView").classList.add("hidden"); showView("chatView"); }
   else { showView("reviewView"); }
 });
 
