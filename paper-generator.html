@@ -350,11 +350,13 @@ table.info td{border:1px solid #666;padding:6px 10px;width:50%}
       <div class="chatwrap">
         <div class="chathead">
           <h2>💬 AI Assistant</h2>
-          <p>Mujh se baat karein — class, subject aur chapter batayein, main paper ki tayyari kar doon ga.</p>
+          <p>Mujh se baat karein — class, subject aur chapter batayein, 📷 se chapter ki photos bhi bhej sakte hain. Main paper ki tayyari kar doon ga.</p>
         </div>
         <div id="chatMsgs"></div>
         <div class="chatinput">
           <input type="text" id="chatInput" placeholder="Yahan likhein… masalan: 9th math chapter 2 ka paper banao" autocomplete="off">
+          <button id="chatPhoto" title="Chapter ki photo lagayein">📷</button>
+          <input type="file" id="chatPhotoIn" accept="image/*" multiple style="display:none">
           <button id="chatSend">Bhejein ➤</button>
         </div>
       </div>
@@ -830,13 +832,60 @@ function applySpec(spec){
   if ($("g_diff")) $("g_diff").value = spec.difficulty || "mixed";
   if ($("g_notes") && spec.notes) $("g_notes").value = spec.notes;
   $("draftSelInfo").textContent = subj + " (Class " + (cls === "9" ? "IX" : "X") + ") — " + chap;
-  addMsg("model", "Zaroor! Neeche chapter ki photos lagayein (8 tak), phir \"AI se draft banao\" dabayein. 📸");
+  /* chat mein lagi photos draft step mein transfer karein */
+  if (CHAT_PHOTOS.length){
+    PHOTOS = CHAT_PHOTOS.slice(0, 8);
+    var box = $("thumbs"); box.innerHTML = "";
+    PHOTOS.forEach(function(b64){
+      var th = document.createElement("img");
+      th.src = "data:image/jpeg;base64," + b64;
+      box.appendChild(th);
+    });
+    box.insertAdjacentHTML("beforeend", "<p class='hint' style='width:100%'>✓ " + PHOTOS.length + " photos chat se aa gayin</p>");
+    CHAT_PHOTOS = [];
+  }
+  addMsg("model", "Zaroor! Photos lag gayin — ab \"AI se draft banao\" dabayein. 📸");
   showView("draftView");
 }
+/* chat mein chapter photos */
+var CHAT_PHOTOS = [];
+function shrinkToJpeg(file, maxDim, quality, cb){
+  var img = new Image();
+  img.onload = function(){
+    var w = img.width, h = img.height;
+    if (Math.max(w,h) > maxDim){ var r = maxDim / Math.max(w,h); w = Math.round(w*r); h = Math.round(h*r); }
+    var c = document.createElement("canvas"); c.width = w; c.height = h;
+    c.getContext("2d").drawImage(img, 0, 0, w, h);
+    var b64 = c.toDataURL("image/jpeg", quality).split(",")[1];
+    URL.revokeObjectURL(img.src);
+    cb(b64, c.toDataURL("image/jpeg", 0.6));
+  };
+  img.src = URL.createObjectURL(file);
+}
+$("chatPhoto").addEventListener("click", function(){ $("chatPhotoIn").click(); });
+$("chatPhotoIn").addEventListener("change", function(){
+  var files = Array.prototype.slice.call($("chatPhotoIn").files, 0, 8 - CHAT_PHOTOS.length);
+  if (!files.length) return;
+  var thumbs = [];
+  var pending = files.length;
+  files.forEach(function(f){
+    shrinkToJpeg(f, 1600, 0.82, function(b64, thumbUrl){
+      CHAT_PHOTOS.push(b64); thumbs.push(thumbUrl);
+      if (--pending === 0){
+        var html = '<div>📷 ' + thumbs.length + ' photo lag gayi:</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">' +
+          thumbs.map(function(u){ return '<img src="' + u + '" style="width:70px;height:70px;object-fit:cover;border-radius:8px">'; }).join("") + "</div>";
+        CHAT_HIST.push({ role: "user", html: html, text: "" });
+        renderChat();
+      }
+    });
+  });
+  $("chatPhotoIn").value = "";
+});
 function sendChat(){
   var inp = $("chatInput");
   var t = inp.value.trim();
-  if (!t) return;
+  if (!t && !CHAT_PHOTOS.length) return;
+  if (!t) t = "Ye rahi chapter ki photos — in se paper banao.";
   inp.value = "";
   addMsg("user", t);
   var typing = document.createElement("div");
@@ -844,7 +893,7 @@ function sendChat(){
   $("chatMsgs").appendChild(typing);
   $("chatMsgs").scrollTop = $("chatMsgs").scrollHeight;
   $("chatSend").disabled = true;
-  var payload = { action: "chat", messages: CHAT_HIST.filter(function(m){ return m.text; }).map(function(m){ return { role: m.role, text: m.text }; }) };
+  var payload = { action: "chat", messages: CHAT_HIST.filter(function(m){ return m.text; }).map(function(m){ return { role: m.role, text: m.text }; }), images: CHAT_PHOTOS.slice(0, 4) };
   authed(payload).then(function(r){
     typing.remove(); $("chatSend").disabled = false;
     if (r.ok){
