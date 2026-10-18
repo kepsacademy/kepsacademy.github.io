@@ -211,7 +211,7 @@ table.info td{border:1px solid #666;padding:6px 10px;width:50%}
     <h2>⚙ Setup — ek dafa</h2>
     <p class="sub">Apne Apps Script Web App ka URL (jo <b>/exec</b> par khatam hota hai) yahan paste karein. Ye sirf is browser mein save hoga.</p>
     <label class="f">Apps Script Web App URL</label>
-    <input type="text" id="setupUrl" placeholder="https://script.google.com/macros/s/AKfyc.../exec">
+    <input type="text" id="setupUrl" placeholder="https://script.google.com/macros/s/AKfyc.../exec" value="https://script.google.com/macros/s/AKfycbzfaVG_dPzloHRPZ63JhwhY-kdhyCLXnDqyu0K_0uJGy-BYmHAnpYE2Tn4YDrtgd1Gg/exec">
     <div class="rowbtns"><button class="btn" id="btnSaveUrl">Save</button></div>
     <div class="err hidden" id="setupErr"></div>
     <p class="hint" style="margin-top:12px">Setup guide SETUP-URDU.txt mein hai — pehle Apps Script deploy karna zaroori hai.</p>
@@ -473,7 +473,8 @@ table.info td{border:1px solid #666;padding:6px 10px;width:50%}
 <script>
 /* ================= KEPS Paper Generator v3 ================= */
 var $ = function(id){ return document.getElementById(id); };
-var API = localStorage.getItem("keps_pgen_url") || "";
+var DEFAULT_API = "https://script.google.com/macros/s/AKfycbzfaVG_dPzloHRPZ63JhwhY-kdhyCLXnDqyu0K_0uJGy-BYmHAnpYE2Tn4YDrtgd1Gg/exec";
+var API = localStorage.getItem("keps_pgen_url_v2") || DEFAULT_API;
 var CREDS = { user: sessionStorage.getItem("keps_pgen_u") || "", pass: sessionStorage.getItem("keps_pgen_p") || "" };
 var ROLE = sessionStorage.getItem("keps_pgen_r") || "";
 var DRAFT = null, PHOTOS = [], SEL = { cls:"9", subject:"", chapters:[], topics:[] };
@@ -638,7 +639,7 @@ $("btnSaveUrl").addEventListener("click", function(){
     $("setupErr").classList.remove("hidden"); return;
   }
   $("setupErr").classList.add("hidden");
-  localStorage.setItem("keps_pgen_url", u); API = u;
+  localStorage.setItem("keps_pgen_url_v2", u); API = u;
   $("setupView").classList.add("hidden");
   $("loginView").classList.remove("hidden");
 });
