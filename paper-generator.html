@@ -829,6 +829,27 @@ function showSpecCard(spec){
     if (CHAT_PHOTOS.length) chatMakePaper(spec); else applySpec(spec);
   });
 }
+/* Paper-setter quality brief — Gemini ko ye notes verbatim milte hain (buildPrompt mein) */
+function qualityBrief(diff){
+  var d = (diff || "mixed").toLowerCase();
+  var dline = "mixed: a balanced mix of easy, medium and hard questions.";
+  if (d === "easy") dline = "easy: ONLY direct, simple questions straight from the exercise — nothing tricky.";
+  else if (d === "medium") dline = "medium: standard exercise-level questions.";
+  else if (d === "hard") dline = "hard: ONLY the toughest exercise questions plus board-exam-level tricky questions.";
+  return "FINAL PAPER-SETTER INSTRUCTIONS (follow strictly — they override everything above):\n" +
+  "1. SOURCE — LAFZ-BA-LAFZ: Take EVERY question WORD-FOR-WORD from the attached chapter photos ONLY. " +
+  "MCQs: copy from the exercise MCQ/objective section. 2-mark shorts: copy from the exercise short-question section. " +
+  "3-mark shorts: copy from the review exercise or longer exercise questions. " +
+  "If any photo or question is unreadable, SKIP it and take another from the photos — NEVER invent, paraphrase, guess, or write a question from your own knowledge.\n" +
+  "2. CORRECT ANSWERS: Every MCQ answer must be double-checked and correct as per the chapter. Balance the answers across a/b/c/d (not all same letter).\n" +
+  "3. BILINGUAL: Every stem and every option in BOTH English and proper Urdu script. Urdu must be natural, exam-style Urdu.\n" +
+  "4. MATH — CRITICAL, follow exactly: Write ALL math in plain ASCII only: x^2, x_1, sqrt(3), cbrt(x), (a+b)/(c-d), log_2(x), log_3(x). " +
+  "NEVER write log2(x) or log3(x) — always underscore: log_2(x). " +
+  "NEVER use Unicode superscripts like ² ³ or ½ — write x^2, x^3, (1/2). " +
+  "In Urdu text, keep every math expression, equation and symbol EXACTLY as in the English version — same order, same symbols, never translated or reordered.\n" +
+  "5. DIFFICULTY: " + dline + "\n" +
+  "6. EXACT COUNT: Produce exactly the number of MCQs/shorts given in the pattern instructions above — not one more, not one less.";
+}
 /* chat se seedha paper: spec + photos -> draft -> paper (ek tap mein) */
 function chatMakePaper(spec){
   var cls = (spec.class === "10") ? "10" : "9";
@@ -844,7 +865,7 @@ function chatMakePaper(spec){
   $("chatMsgs").appendChild(typing);
   $("chatMsgs").scrollTop = $("chatMsgs").scrollHeight;
   var notes = (spec.notes ? spec.notes + "\n" : "") + (PATTERNS[PATTERN].override || "") +
-    "\nQUALITY RULES: Take ALL questions LAFZ-BA-LAFZ from the attached chapter photos only (MCQs from the exercise MCQ section, short questions from the exercise short questions). Never invent or paraphrase questions. Read every photo carefully at full detail.";
+    "\n" + qualityBrief(spec.difficulty);
   var brief = {
     class_name: "Class " + (cls === "9" ? "IX" : "X"),
     subject: subj, chapter: chap, topics: "", board: "Punjab",
@@ -1111,6 +1132,7 @@ $("btnDraft").addEventListener("click", function(){
   var notes = $("g_notes").value.trim();
   var ov = PATTERNS[PATTERN].override;
   if (ov) notes = (notes ? notes + "\n" : "") + ov;
+  notes = (notes ? notes + "\n" : "") + qualityBrief($("g_diff").value);
   var brief = {
     class_name: "Class " + (SEL.cls === "9" ? "IX" : "X"),
     subject: SEL.subject,
